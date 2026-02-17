@@ -1,8 +1,9 @@
-# Robots.txt pentru danalprodus.com
+# Allow all search engines to crawl the site
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /api/
 
-# Sitemap
-Sitemap: https://danalprodus.com/sitemap.xml
+# Block access to admin area
+Disallow: /admin
+
+# Sitemap location
+Sitemap: https://ssmdetailing.ro/sitemap.xml
