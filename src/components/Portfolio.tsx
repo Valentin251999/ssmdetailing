@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, X, Sparkles, Car, Wind, Stars, Lightbulb, Loader2 } from 'lucide-react';
+import { X, Sparkles, Car, Wind, Stars, Lightbulb, Loader2 } from 'lucide-react';
 import { supabase, type PortfolioItem } from '../lib/supabase';
 
 interface PortfolioProps {
-  onNavigateToHome: () => void;
+  onNavigateToHome?: () => void;
 }
 
 const categories = [
@@ -48,17 +48,6 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black">
-      <div className="fixed top-0 left-0 right-0 bg-black/80 backdrop-blur-md z-40 border-b border-amber-500/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={onNavigateToHome}
-            className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Înapoi</span>
-          </button>
-        </div>
-      </div>
 
       <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

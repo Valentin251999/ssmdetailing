@@ -1,15 +1,17 @@
 import { Menu, X, Instagram, Facebook } from 'lucide-react';
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-interface HeaderProps {
-  onNavigateToPortfolio: () => void;
-  onNavigateToReels: () => void;
-}
-
-export default function Header({ onNavigateToPortfolio, onNavigateToReels }: HeaderProps) {
+export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const scrollToSection = (id: string) => {
+    if (location.pathname !== '/') {
+      window.location.href = `/#${id}`;
+      return;
+    }
+
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -17,13 +19,7 @@ export default function Header({ onNavigateToPortfolio, onNavigateToReels }: Hea
     }
   };
 
-  const handlePortfolioClick = () => {
-    onNavigateToPortfolio();
-    setIsMenuOpen(false);
-  };
-
-  const handleReelsClick = () => {
-    onNavigateToReels();
+  const handleMobileMenuClose = () => {
     setIsMenuOpen(false);
   };
 
@@ -66,21 +62,21 @@ export default function Header({ onNavigateToPortfolio, onNavigateToReels }: Hea
           </div>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <button onClick={() => scrollToSection('home')} className="text-gray-400 hover:text-white transition-colors">
+            <Link to="/" onClick={() => scrollToSection('home')} className="text-gray-400 hover:text-white transition-colors">
               Acasă
-            </button>
+            </Link>
             <button onClick={() => scrollToSection('services')} className="text-gray-400 hover:text-white transition-colors">
               Servicii
             </button>
             <button onClick={() => scrollToSection('gallery')} className="text-gray-400 hover:text-white transition-colors">
               Galerie
             </button>
-            <button onClick={handlePortfolioClick} className="text-amber-500 hover:text-amber-400 transition-colors font-medium">
+            <Link to="/portofoliu" className="text-amber-500 hover:text-amber-400 transition-colors font-medium">
               Portofoliu
-            </button>
-            <button onClick={handleReelsClick} className="text-red-500 hover:text-red-400 transition-colors font-medium">
+            </Link>
+            <Link to="/reels" className="text-red-500 hover:text-red-400 transition-colors font-medium">
               Reels
-            </button>
+            </Link>
             <button onClick={() => scrollToSection('contact')} className="text-gray-400 hover:text-white transition-colors">
               Contact
             </button>
@@ -135,21 +131,21 @@ export default function Header({ onNavigateToPortfolio, onNavigateToReels }: Hea
       {isMenuOpen && (
         <div className="md:hidden bg-black border-t border-white/5">
           <nav className="container mx-auto px-4 py-6 flex flex-col space-y-4">
-            <button onClick={() => scrollToSection('home')} className="text-gray-400 hover:text-white transition-colors text-left py-2">
+            <Link to="/" onClick={() => { scrollToSection('home'); handleMobileMenuClose(); }} className="text-gray-400 hover:text-white transition-colors text-left py-2">
               Acasă
-            </button>
+            </Link>
             <button onClick={() => scrollToSection('services')} className="text-gray-400 hover:text-white transition-colors text-left py-2">
               Servicii
             </button>
             <button onClick={() => scrollToSection('gallery')} className="text-gray-400 hover:text-white transition-colors text-left py-2">
               Galerie
             </button>
-            <button onClick={handlePortfolioClick} className="text-amber-500 hover:text-amber-400 transition-colors text-left py-2 font-medium">
+            <Link to="/portofoliu" onClick={handleMobileMenuClose} className="text-amber-500 hover:text-amber-400 transition-colors text-left py-2 font-medium">
               Portofoliu
-            </button>
-            <button onClick={handleReelsClick} className="text-red-500 hover:text-red-400 transition-colors text-left py-2 font-medium">
+            </Link>
+            <Link to="/reels" onClick={handleMobileMenuClose} className="text-red-500 hover:text-red-400 transition-colors text-left py-2 font-medium">
               Reels
-            </button>
+            </Link>
             <button onClick={() => scrollToSection('contact')} className="text-gray-400 hover:text-white transition-colors text-left py-2">
               Contact
             </button>

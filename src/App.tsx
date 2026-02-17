@@ -1,106 +1,93 @@
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Header from './components/Header';
-import Hero from './components/Hero';
-import Services from './components/Services';
-import Gallery from './components/Gallery';
-import Reels from './components/Reels';
-import ReelsCTA from './components/ReelsCTA';
-import TikTokReels from './components/TikTokReels';
-import About from './components/About';
-import Testimonials from './components/Testimonials';
-import TestimonialSubmission from './components/TestimonialSubmission';
-import FAQ from './components/FAQ';
-import Contact from './components/Contact';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import ReelsFloatingButton from './components/ReelsFloatingButton';
-import Portfolio from './components/Portfolio';
+import HomePage from './pages/HomePage';
+import PortfolioPage from './pages/PortfolioPage';
+import ReelsPage from './pages/ReelsPage';
 import PortfolioAdmin from './components/PortfolioAdmin';
 import ComprehensiveAdmin from './components/ComprehensiveAdmin';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'portfolio' | 'reels' | 'admin' | 'admin-panel'>('home');
+function ScrollToSection() {
+  const location = useLocation();
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#admin-panel') {
-        setCurrentPage('admin-panel');
-      } else if (hash === '#admin') {
-        setCurrentPage('admin');
-      } else if (hash === '#portfolio') {
-        setCurrentPage('portfolio');
-      } else if (hash === '#reels') {
-        setCurrentPage('reels');
-      } else {
-        setCurrentPage('home');
-      }
-    };
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else if (location.pathname === '/') {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
+  return null;
+}
 
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
-
-  const navigateToPortfolio = () => {
-    setCurrentPage('portfolio');
-    window.location.hash = '';
-  };
-
-  const navigateToReels = () => {
-    setCurrentPage('reels');
-    window.location.hash = '';
-  };
-
-  const navigateToHome = () => {
-    setCurrentPage('home');
-    window.location.hash = '';
-  };
+function AppContent() {
+  const location = useLocation();
+  const isReelsPage = location.pathname === '/reels';
+  const isAdminPage = location.pathname === '/admin' || location.pathname === '/admin-panel';
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-black">
-        {currentPage === 'home' ? (
+    <>
+      <ScrollToSection />
+      {!isReelsPage && !isAdminPage && <Header />}
+
+      <Routes>
+        <Route path="/" element={
           <>
-            <Header onNavigateToPortfolio={navigateToPortfolio} onNavigateToReels={navigateToReels} />
             <main>
-              <Hero />
-              <Services />
-              <Gallery onNavigateToPortfolio={navigateToPortfolio} />
-              <Reels />
-              <ReelsCTA onNavigateToReels={navigateToReels} />
-              <About />
-              <Testimonials />
-              <TestimonialSubmission />
-              <FAQ />
-              <Contact />
+              <HomePage onNavigateToPortfolio={() => {}} onNavigateToReels={() => {}} />
             </main>
             <Footer />
             <WhatsAppButton />
-            <ReelsFloatingButton onClick={navigateToReels} />
+            <ReelsFloatingButton onClick={() => window.location.href = '/reels'} />
           </>
-        ) : currentPage === 'portfolio' ? (
+        } />
+
+        <Route path="/portofoliu" element={
           <>
-            <Portfolio onNavigateToHome={navigateToHome} />
+            <PortfolioPage />
+            <Footer />
             <WhatsAppButton />
           </>
-        ) : currentPage === 'reels' ? (
-          <TikTokReels onNavigateToHome={navigateToHome} />
-        ) : currentPage === 'admin-panel' ? (
+        } />
+
+        <Route path="/reels" element={<ReelsPage />} />
+
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <PortfolioAdmin onNavigateToHome={() => window.location.href = '/'} />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-panel" element={
           <ProtectedRoute>
             <ComprehensiveAdmin />
           </ProtectedRoute>
-        ) : (
-          <ProtectedRoute>
-            <PortfolioAdmin onNavigateToHome={navigateToHome} />
-          </ProtectedRoute>
-        )}
-      </div>
+        } />
+      </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-black">
+          <AppContent />
+        </div>
+      </Router>
     </AuthProvider>
   );
 }

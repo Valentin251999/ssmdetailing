@@ -27,6 +27,21 @@ interface TikTokReelsProps {
   onNavigateToHome?: () => void;
 }
 
+function BackButton({ onClick }: { onClick?: () => void }) {
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="fixed top-20 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-3 hover:bg-black/90 transition-all group shadow-lg"
+        aria-label="Înapoi la pagina principală"
+      >
+        <ArrowLeft className="w-6 h-6 text-white group-hover:text-amber-400 transition-colors" />
+      </button>
+    );
+  }
+  return null;
+}
+
 function getSessionId() {
   let sessionId = localStorage.getItem('reels_session_id');
   if (!sessionId) {
@@ -410,15 +425,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         </div>
       </div>
 
-      {onNavigateToHome && (
-        <button
-          onClick={onNavigateToHome}
-          className="fixed top-20 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-3 hover:bg-black/90 transition-all group shadow-lg"
-          aria-label="Înapoi la pagina principală"
-        >
-          <ArrowLeft className="w-6 h-6 text-white group-hover:text-amber-400 transition-colors" />
-        </button>
-      )}
+      <BackButton onClick={onNavigateToHome} />
 
       <div
         ref={containerRef}
