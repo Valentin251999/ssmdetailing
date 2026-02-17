@@ -1,36 +1,16 @@
-import { useEffect } from 'react';
 import TikTokReels from '../components/TikTokReels';
+import SEOHelmet from '../components/SEOHelmet';
 
 export default function ReelsPage() {
-  useEffect(() => {
-    document.title = 'Reels Detailing Auto | Transformări Spectaculoase';
-
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        'content',
-        'Urmărește transformările spectaculoase ale mașinilor noastre. Videoclipuri scurte cu detailing interior, exterior și starlight.'
-      );
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = 'Urmărește transformările spectaculoase ale mașinilor noastre. Videoclipuri scurte cu detailing interior, exterior și starlight.';
-      document.head.appendChild(meta);
-    }
-
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) {
-      ogTitle.setAttribute('content', 'Reels Detailing Auto | Transformări Spectaculoase');
-    }
-
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogDescription) {
-      ogDescription.setAttribute(
-        'content',
-        'Urmărește transformările spectaculoase ale mașinilor noastre. Videoclipuri scurte cu detailing interior, exterior și starlight.'
-      );
-    }
-  }, []);
-
-  return <TikTokReels />;
+  return (
+    <>
+      <SEOHelmet
+        title="Video Reels Detailing Auto | Transformări Before & After - SSM Detailing"
+        description="Videoclipuri spectaculoase cu transformări de detailing auto. Vezi rezultatele live: polish caroserie, detailing interior, plafon starlight, ceramic coating. Subscribe pentru conținut nou!"
+        keywords="reels detailing auto, video detailing, transformari auto, before after video, detailing tiktok, car detailing videos, ssm detailing videos"
+        canonical="https://danalprodus.com/reels"
+      />
+      <TikTokReels />
+    </>
+  );
 }

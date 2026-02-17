@@ -1,0 +1,8 @@
+# Robots.txt pentru danalprodus.com
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://danalprodus.com/sitemap.xml
