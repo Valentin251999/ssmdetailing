@@ -106,8 +106,9 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
                     <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: item.before_image_url, title: item.title, type: 'before' })}>
                       <img
                         src={item.before_image_url}
-                        alt="Înainte"
+                        alt={`${item.title} - Înainte`}
                         className="w-full h-40 object-cover rounded-lg"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-lg flex items-end p-2">
                         <span className="text-white text-sm font-medium">Înainte</span>
@@ -116,8 +117,9 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
                     <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: item.after_image_url, title: item.title, type: 'after' })}>
                       <img
                         src={item.after_image_url}
-                        alt="După"
+                        alt={`${item.title} - După`}
                         className="w-full h-40 object-cover rounded-lg"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-amber-600/70 to-transparent rounded-lg flex items-end p-2">
                         <span className="text-white text-sm font-medium">După</span>

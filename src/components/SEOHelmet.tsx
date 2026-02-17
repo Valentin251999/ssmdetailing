@@ -13,11 +13,11 @@ export default function SEOHelmet({
   title = 'SSM Detailing - Servicii Premium de Detailing Auto în Galați',
   description = 'SSM Detailing oferă servicii profesionale de detailing auto în Galați: polish caroserie, tratamente ceramice, curățare detaliată interior și exterior. Experiență de 8 ani, rezultate garantate.',
   keywords = 'detailing auto galati, polish auto galati, ceramic coating galati, curatare interior auto, detailing profesional, ssm detailing',
-  ogImage = 'https://danalprodus.com/og-image.svg',
+  ogImage = 'https://ssmdetailing.ro/og-image.svg',
   canonical
 }: SEOHelmetProps) {
   const location = useLocation();
-  const baseUrl = 'https://danalprodus.com';
+  const baseUrl = 'https://ssmdetailing.ro';
   const fullUrl = `${baseUrl}${location.pathname}`;
   const canonicalUrl = canonical || fullUrl;
 

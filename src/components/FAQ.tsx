@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { FAQSchema } from './SchemaMarkup';
 
 interface FAQItem {
   id: string;
@@ -42,7 +43,8 @@ export default function FAQ() {
   };
 
   return (
-    <section className="py-24 bg-gradient-to-b from-black to-gray-900">
+    <section id="faq" className="py-24 bg-gradient-to-b from-black to-gray-900">
+      <FAQSchema faqs={faqs} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <span className="text-gray-500 font-medium text-sm uppercase tracking-wide">

@@ -70,6 +70,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
                         src={item.before_image_url}
                         alt={`${item.title} - Înainte`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       <div className="absolute top-4 left-4 bg-red-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
                         Înainte
@@ -80,6 +81,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
                         src={item.after_image_url}
                         alt={`${item.title} - După`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       <div className="absolute top-4 right-4 bg-green-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
                         După

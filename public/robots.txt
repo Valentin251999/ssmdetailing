@@ -4,6 +4,7 @@ Allow: /
 
 # Block access to admin area
 Disallow: /admin
+Disallow: /admin-panel
 
 # Sitemap location
 Sitemap: https://ssmdetailing.ro/sitemap.xml

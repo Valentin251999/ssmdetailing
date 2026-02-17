@@ -128,6 +128,7 @@ export default function Reels() {
                       src={reel.thumbnail_url}
                       alt={reel.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-amber-600/20" />

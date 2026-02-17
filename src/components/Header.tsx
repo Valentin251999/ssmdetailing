@@ -28,7 +28,7 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center space-x-5">
-            <svg width="75" height="75" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="75" height="75" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SSM Detailing Logo">
               <defs>
                 <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" style={{ stopColor: '#fbbf24', stopOpacity: 1 }} />
@@ -54,10 +54,10 @@ export default function Header() {
               <path d="M 35 90 Q 70 93 105 90" stroke="url(#goldGradient)" strokeWidth="1.5" fill="none" opacity="0.7"/>
             </svg>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wider drop-shadow-lg">
+              <p className="text-3xl sm:text-4xl font-black text-white tracking-wider drop-shadow-lg">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-amber-600">SSM</span>
                 <span className="text-white ml-2">DETAILING</span>
-              </h1>
+              </p>
             </div>
           </div>
 

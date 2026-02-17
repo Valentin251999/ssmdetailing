@@ -444,6 +444,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   src={reel.thumbnail_url || 'https://via.placeholder.com/400x600?text=TikTok+Video'}
                   alt={reel.title}
                   className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                   <a

@@ -49,7 +49,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-4 mb-4">
-                <svg width="75" height="75" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="75" height="75" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SSM Detailing Logo">
                   <defs>
                     <linearGradient id="goldGradientFooter" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" style={{ stopColor: '#fbbf24', stopOpacity: 1 }} />

@@ -1,34 +1,52 @@
 import { useEffect } from 'react';
 
+const BASE_URL = 'https://ssmdetailing.ro';
+
+function injectSchema(id: string, schema: object) {
+  let scriptTag = document.querySelector(`script[data-schema-id="${id}"]`);
+  if (!scriptTag) {
+    scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'application/ld+json');
+    scriptTag.setAttribute('data-schema-id', id);
+    document.head.appendChild(scriptTag);
+  }
+  scriptTag.textContent = JSON.stringify(schema);
+}
+
+function removeSchema(id: string) {
+  const scriptTag = document.querySelector(`script[data-schema-id="${id}"]`);
+  if (scriptTag) scriptTag.remove();
+}
+
 export default function SchemaMarkup() {
   useEffect(() => {
     const schema = {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
-      '@id': 'https://danalprodus.com/#organization',
+      '@id': `${BASE_URL}/#organization`,
       name: 'SSM Detailing',
-      alternateName: 'SSM Detailing Galați',
-      description: 'Servicii profesionale de detailing auto în Galați cu experiență de peste 8 ani. Oferim polish caroserie, tratamente ceramice, curățare detaliată interior și exterior.',
-      url: 'https://danalprodus.com',
+      alternateName: 'SSM Detailing Mărculești',
+      description: 'Servicii profesionale de detailing auto în Mărculești, Ialomița. Oferim detailing interior și exterior, plafoane starlight, recondiționare faruri.',
+      url: BASE_URL,
       telephone: '+40726521578',
       priceRange: '$$',
-      image: 'https://danalprodus.com/og-image.svg',
+      image: `${BASE_URL}/og-image.svg`,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://danalprodus.com/og-image.svg',
+        url: `${BASE_URL}/og-image.svg`,
         width: 140,
         height: 140
       },
       address: {
         '@type': 'PostalAddress',
-        addressLocality: 'Galați',
-        addressRegion: 'Galați',
+        addressLocality: 'Mărculești',
+        addressRegion: 'Ialomița',
         addressCountry: 'RO'
       },
       geo: {
         '@type': 'GeoCoordinates',
-        latitude: 45.4353,
-        longitude: 28.0080
+        latitude: 44.4413,
+        longitude: 27.3513
       },
       openingHoursSpecification: [
         {
@@ -40,8 +58,8 @@ export default function SchemaMarkup() {
         {
           '@type': 'OpeningHoursSpecification',
           dayOfWeek: 'Saturday',
-          opens: '10:00',
-          closes: '16:00'
+          opens: '09:00',
+          closes: '14:00'
         }
       ],
       sameAs: [
@@ -62,46 +80,136 @@ export default function SchemaMarkup() {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: 'Polish Caroserie',
-              description: 'Restaurare finisaj vopsea, eliminare zgârieturi'
+              name: 'Detailing Interior',
+              description: 'Curățare și recondiționare profesională a interiorului auto'
             }
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: 'Tratament Ceramic',
-              description: 'Protecție avansată cu durată lungă pentru caroserie'
+              name: 'Detailing Exterior',
+              description: 'Polish caroserie, tratamente ceramice, protecție vopsea'
             }
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: 'Curățare Interior',
-              description: 'Curățare detaliată a interiorului mașinii'
+              name: 'Plafon Starlight',
+              description: 'Instalare plafon înstelat personalizat cu fibră optică'
             }
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: 'Detailing Complet',
-              description: 'Serviciu complet interior și exterior'
+              name: 'Recondiționare Faruri',
+              description: 'Restaurare și polish faruri, eliminare opacitate'
             }
           }
         ]
       }
     };
 
-    let scriptTag = document.querySelector('script[type="application/ld+json"]');
-    if (!scriptTag) {
-      scriptTag = document.createElement('script');
-      scriptTag.setAttribute('type', 'application/ld+json');
-      document.head.appendChild(scriptTag);
-    }
-    scriptTag.textContent = JSON.stringify(schema);
+    injectSchema('local-business', schema);
+
+    return () => removeSchema('local-business');
   }, []);
+
+  return null;
+}
+
+interface FAQSchemaProps {
+  faqs: Array<{ question: string; answer: string }>;
+}
+
+export function FAQSchema({ faqs }: FAQSchemaProps) {
+  useEffect(() => {
+    if (faqs.length === 0) return;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer
+        }
+      }))
+    };
+
+    injectSchema('faq', schema);
+
+    return () => removeSchema('faq');
+  }, [faqs]);
+
+  return null;
+}
+
+interface BreadcrumbSchemaProps {
+  items: Array<{ name: string; url: string }>;
+}
+
+export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
+  useEffect(() => {
+    if (items.length === 0) return;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: item.url
+      }))
+    };
+
+    injectSchema('breadcrumb', schema);
+
+    return () => removeSchema('breadcrumb');
+  }, [items]);
+
+  return null;
+}
+
+interface VideoSchemaProps {
+  videos: Array<{
+    title: string;
+    description: string;
+    thumbnailUrl: string;
+    contentUrl: string;
+  }>;
+}
+
+export function VideoSchema({ videos }: VideoSchemaProps) {
+  useEffect(() => {
+    if (videos.length === 0) return;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: videos.map((video, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'VideoObject',
+          name: video.title,
+          description: video.description || video.title,
+          thumbnailUrl: video.thumbnailUrl,
+          contentUrl: video.contentUrl,
+          uploadDate: new Date().toISOString().split('T')[0]
+        }
+      }))
+    };
+
+    injectSchema('videos', schema);
+
+    return () => removeSchema('videos');
+  }, [videos]);
 
   return null;
 }
