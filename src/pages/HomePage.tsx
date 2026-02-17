@@ -17,6 +17,8 @@ interface HomePageProps {
   onNavigateToPortfolio: () => void;
   onNavigateToReels: () => void;
 }
+
+export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: HomePageProps) {
   useEffect(() => {
     setPageMeta({
       title: 'Detailing Auto Premium | Servicii Profesionale de Curățare și Recondiționare',
@@ -29,8 +31,6 @@ interface HomePageProps {
     generateStructuredData('LocalBusiness', localBusinessSchema);
   }, []);
 
-
-export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: HomePageProps) {
   return (
     <>
       <SEOHelmet
