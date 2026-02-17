@@ -52,6 +52,12 @@ export default function Hero() {
             </span>
           </div>
 
+          <div className="mb-4">
+            <span className="bg-green-500/20 border border-green-500/50 text-green-400 px-6 py-3 rounded-lg text-lg font-bold animate-pulse">
+              🚀 TEST SYNC GITHUB - Daca vezi asta, site-ul e LIVE!
+            </span>
+          </div>
+
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             {heroTitle}
           </h1>
