@@ -1,39 +1,49 @@
-import React, { createContext, useContext, useState } from 'react';
-
-const ADMIN_PASSWORD = 'Admin12345!';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const signIn = async (password: string) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
     try {
-      if (password === ADMIN_PASSWORD) {
-        setIsAuthenticated(true);
-        return { error: null };
-      } else {
-        return { error: new Error('Parolă incorectă') };
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { error: new Error(error.message) };
+      return { error: null };
     } catch (error) {
       return { error: error as Error };
     }
   };
 
   const signOut = async () => {
-    setIsAuthenticated(false);
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!session, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
