@@ -8,7 +8,7 @@ import {
 import ReelsAdmin from './ReelsAdmin';
 import { useAuth } from '../contexts/AuthContext';
 
-type Tab = 'hero' | 'about' | 'services' | 'gallery' | 'portfolio' | 'reels' | 'testimonials' | 'reviews' | 'faq' | 'contact';
+type Tab = 'hero' | 'about' | 'services' | 'gallery' | 'portfolio' | 'reels' | 'reviews' | 'faq' | 'contact';
 
 interface SiteSettings {
   id: string;
@@ -62,16 +62,6 @@ interface PortfolioItem {
   is_featured: boolean;
 }
 
-interface Testimonial {
-  id: string;
-  customer_name: string;
-  customer_role: string;
-  content: string;
-  rating: number;
-  display_order: number;
-  is_active: boolean;
-}
-
 interface FAQItem {
   id: string;
   question: string;
@@ -97,7 +87,6 @@ export default function ComprehensiveAdmin() {
   const [services, setServices] = useState<Service[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,12 +101,11 @@ export default function ComprehensiveAdmin() {
     try {
       setLoading(true);
 
-      const [settingsRes, servicesRes, galleryRes, portfolioRes, testimonialsRes, reviewsRes, faqRes] = await Promise.all([
+      const [settingsRes, servicesRes, galleryRes, portfolioRes, reviewsRes, faqRes] = await Promise.all([
         supabase.from('site_settings').select('*').maybeSingle(),
         supabase.from('services').select('*').order('display_order'),
         supabase.from('gallery_images').select('*').order('display_order'),
         supabase.from('portfolio_items').select('*').order('display_order'),
-        supabase.from('testimonials').select('*').order('display_order'),
         supabase.from('public_reviews').select('*').order('created_at', { ascending: false }),
         supabase.from('faq_items').select('*').order('display_order')
       ]);
@@ -126,7 +114,6 @@ export default function ComprehensiveAdmin() {
       if (servicesRes.data) setServices(servicesRes.data);
       if (galleryRes.data) setGalleryImages(galleryRes.data);
       if (portfolioRes.data) setPortfolioItems(portfolioRes.data);
-      if (testimonialsRes.data) setTestimonials(testimonialsRes.data);
       if (reviewsRes.data) setPublicReviews(reviewsRes.data);
       if (faqRes.data) setFaqItems(faqRes.data);
     } catch (error) {
@@ -284,41 +271,6 @@ export default function ComprehensiveAdmin() {
     }
   };
 
-  const saveTestimonial = async (testimonial: Partial<Testimonial>) => {
-    try {
-      if (testimonial.id) {
-        const { error } = await supabase
-          .from('testimonials')
-          .update(testimonial)
-          .eq('id', testimonial.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('testimonials')
-          .insert([{ ...testimonial, display_order: testimonials.length }]);
-        if (error) throw error;
-      }
-      await loadData();
-      showMessage('Testimonialul a fost salvat!');
-    } catch (error) {
-      void error;
-      showMessage('Eroare la salvarea testimonialului');
-    }
-  };
-
-  const deleteTestimonial = async (id: string) => {
-    if (!confirm('Sigur vrei să ștergi acest testimonial?')) return;
-    try {
-      const { error } = await supabase.from('testimonials').delete().eq('id', id);
-      if (error) throw error;
-      await loadData();
-      showMessage('Testimonialul a fost șters!');
-    } catch (error) {
-      void error;
-      showMessage('Eroare la ștergerea testimonialului');
-    }
-  };
-
   const saveFAQ = async (faq: Partial<FAQItem>) => {
     try {
       if (faq.id) {
@@ -404,7 +356,6 @@ export default function ComprehensiveAdmin() {
     { id: 'gallery' as Tab, label: 'Galerie', icon: Image },
     { id: 'portfolio' as Tab, label: 'Portfolio', icon: Folder },
     { id: 'reels' as Tab, label: 'Video Reels', icon: Video },
-    { id: 'testimonials' as Tab, label: 'Testimoniale', icon: MessageSquare },
     { id: 'reviews' as Tab, label: 'Recenzii Publice', icon: MessageSquare },
     { id: 'faq' as Tab, label: 'FAQ', icon: HelpCircle },
     { id: 'contact' as Tab, label: 'Contact', icon: Phone }
@@ -809,68 +760,6 @@ export default function ComprehensiveAdmin() {
         {activeTab === 'reels' && (
           <div className="bg-gray-900 rounded-lg shadow-sm p-6">
             <ReelsAdmin />
-          </div>
-        )}
-
-        {activeTab === 'testimonials' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Testimoniale</h2>
-                <button
-                  onClick={() => {
-                    const name = prompt('Nume client:');
-                    const role = prompt('Rol/Mașină:');
-                    const content = prompt('Testimonial:');
-                    if (name && content) {
-                      saveTestimonial({ customer_name: name, customer_role: role || '', content, rating: 5, is_active: true });
-                    }
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  <Plus className="w-4 h-4" />
-                  Adaugă Testimonial
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{testimonial.customer_name}</h3>
-                        {testimonial.customer_role && (
-                          <p className="text-sm text-gray-500">{testimonial.customer_role}</p>
-                        )}
-                        <p className="text-sm text-gray-600 mt-2">{testimonial.content}</p>
-                        <div className="text-yellow-500 mt-2">{'⭐'.repeat(testimonial.rating)}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const name = prompt('Nume client:', testimonial.customer_name);
-                            const role = prompt('Rol/Mașină:', testimonial.customer_role);
-                            const content = prompt('Testimonial:', testimonial.content);
-                            if (name && content) {
-                              saveTestimonial({ ...testimonial, customer_name: name, customer_role: role || '', content });
-                            }
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteTestimonial(testimonial.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
