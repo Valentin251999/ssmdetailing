@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, lazy, Suspense, Component, type ReactNode } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -83,6 +83,7 @@ function ScrollToSection() {
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isReelsPage = location.pathname === '/reels';
   const isAdminPage = location.pathname === '/admin' || location.pathname === '/admin-panel';
 
@@ -100,7 +101,7 @@ function AppContent() {
           <Route path="/" element={
             <>
               <main id="main-content">
-                <HomePage onNavigateToPortfolio={() => {}} onNavigateToReels={() => {}} />
+                <HomePage onNavigateToPortfolio={() => navigate('/portofoliu')} onNavigateToReels={() => navigate('/reels')} />
               </main>
               <Footer />
               <WhatsAppButton />
