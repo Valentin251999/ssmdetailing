@@ -80,8 +80,9 @@ export default function PortfolioAdmin({ onNavigateToHome }: PortfolioAdminProps
 
       await fetchPortfolioItems();
       alert('Lucrare adăugată cu succes!');
-    } catch (err) {
-      alert('Eroare la adăugarea lucrării: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'message' in err ? (err as { message: string }).message : JSON.stringify(err);
+      alert('Eroare la adăugarea lucrării: ' + msg);
     } finally {
       setSaving(false);
     }
