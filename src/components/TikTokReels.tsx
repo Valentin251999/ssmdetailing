@@ -403,11 +403,11 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       {onNavigateToHome && (
         <button
           onClick={onNavigateToHome}
-          className="fixed bottom-8 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-4 hover:bg-black/90 transition-all group shadow-lg active:scale-95"
+          className="fixed top-16 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-3 hover:bg-black/90 transition-all group shadow-lg active:scale-95"
           aria-label="Înapoi la pagina principală"
           style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
         >
-          <ArrowLeft className="w-7 h-7 text-white group-hover:text-amber-400 transition-colors" />
+          <ArrowLeft className="w-6 h-6 text-white group-hover:text-amber-400 transition-colors" />
         </button>
       )}
 
