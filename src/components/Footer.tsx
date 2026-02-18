@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Instagram, Facebook } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatPhoneForDisplay, formatPhoneForTel } from '../utils/phoneFormatter';
 
 export default function Footer() {
-  const [loading, setLoading] = useState(true);
-  const [tagline, setTagline] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [tagline, setTagline] = useState('Excelență în detailing interior auto');
+  const [phone, setPhone] = useState('+40726521578');
+  const [address, setAddress] = useState('Mărculești, Ialomița, România');
   const [instagram, setInstagram] = useState('');
-  const [facebook, setFacebook] = useState('');
-  const [tiktok, setTiktok] = useState('');
+  const [facebook, setFacebook] = useState('https://www.facebook.com/chituvalentin25/');
+  const [tiktok, setTiktok] = useState('https://www.tiktok.com/@stefanmarian66');
 
   useEffect(() => {
     async function fetchSettings() {
@@ -20,35 +19,20 @@ export default function Footer() {
           .select('footer_tagline, contact_phone, contact_address, instagram_url, facebook_url, tiktok_url')
           .maybeSingle();
 
-        setTagline(data?.footer_tagline || 'Atelier specializat interior. Rezultate profesionale.');
-        setPhone(data?.contact_phone || '0726 521 578');
-        setAddress(data?.contact_address || 'Mărculești, Ialomița, România');
-        setInstagram(data?.instagram_url || 'https://www.instagram.com/ssm_detailing06/');
-        setFacebook(data?.facebook_url || 'https://www.facebook.com/profile.php?id=61568245228709');
-        setTiktok(data?.tiktok_url || 'https://www.tiktok.com/@stefanmarian66');
+        if (data) {
+          if (data.footer_tagline) setTagline(data.footer_tagline);
+          if (data.contact_phone) setPhone(data.contact_phone);
+          if (data.contact_address) setAddress(data.contact_address);
+          setInstagram(data.instagram_url || '');
+          if (data.facebook_url) setFacebook(data.facebook_url);
+          if (data.tiktok_url) setTiktok(data.tiktok_url);
+        }
       } catch {
-        setTagline('Atelier specializat interior. Rezultate profesionale.');
-        setPhone('0726 521 578');
-        setAddress('Mărculești, Ialomița, România');
-        setInstagram('https://www.instagram.com/ssm_detailing06/');
-        setFacebook('https://www.facebook.com/profile.php?id=61568245228709');
-        setTiktok('https://www.tiktok.com/@stefanmarian66');
-      } finally {
-        setLoading(false);
+        // valorile default raman
       }
     }
     fetchSettings();
   }, []);
-
-  if (loading) {
-    return (
-      <footer className="bg-black border-t border-white/5 py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto h-64"></div>
-        </div>
-      </footer>
-    );
-  }
 
   return (
     <footer className="bg-black border-t border-white/5 py-12">

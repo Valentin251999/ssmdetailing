@@ -2,13 +2,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function About() {
-  const [loading, setLoading] = useState(true);
-  const [eyebrow, setEyebrow] = useState('');
-  const [title, setTitle] = useState('');
-  const [intro, setIntro] = useState('');
-  const [whatWeDo, setWhatWeDo] = useState<string[]>([]);
-  const [whatWeDontDo, setWhatWeDontDo] = useState<string[]>([]);
-  const [motto, setMotto] = useState('');
+  const [eyebrow, setEyebrow] = useState('Despre Noi');
+  const [title, setTitle] = useState('Atelier Specializat');
+  const [intro, setIntro] = useState('SSM Detailing este specializat în lucrări de interior și detalii selective de exterior.');
+  const [whatWeDo, setWhatWeDo] = useState<string[]>([
+    'Plafoane Starlight personalizate',
+    'Detailing interior premium',
+    'Restaurare faruri',
+    'Retapițare plafon & stâlpi',
+    'Curățare jante'
+  ]);
+  const [whatWeDontDo, setWhatWeDontDo] = useState<string[]>([
+    'Spălare exterioară',
+    'Corecție vopsea',
+    'Ceară / Lustruire',
+    'Servicii de volum'
+  ]);
+  const [motto, setMotto] = useState('Ne concentrăm pe calitate, nu pe cantitate.');
 
   useEffect(() => {
     async function fetchSettings() {
@@ -18,35 +28,20 @@ export default function About() {
           .select('about_eyebrow, about_title, about_intro, about_what_we_do, about_what_we_dont_do, about_motto')
           .maybeSingle();
 
-        setEyebrow(data?.about_eyebrow || 'Despre Noi');
-        setTitle(data?.about_title || 'Atelier Specializat');
-        setIntro(data?.about_intro || 'SSM Detailing este un atelier specializat exclusiv pe interior auto.');
-        setWhatWeDo(data?.about_what_we_do || []);
-        setWhatWeDontDo(data?.about_what_we_dont_do || []);
-        setMotto(data?.about_motto || 'Ne concentrăm pe calitate, nu pe cantitate.');
+        if (data) {
+          if (data.about_eyebrow) setEyebrow(data.about_eyebrow);
+          if (data.about_title) setTitle(data.about_title);
+          if (data.about_intro) setIntro(data.about_intro);
+          if (data.about_what_we_do?.length) setWhatWeDo(data.about_what_we_do);
+          if (data.about_what_we_dont_do?.length) setWhatWeDontDo(data.about_what_we_dont_do);
+          if (data.about_motto) setMotto(data.about_motto);
+        }
       } catch {
-        setEyebrow('Despre Noi');
-        setTitle('Atelier Specializat');
-        setIntro('SSM Detailing este un atelier specializat exclusiv pe interior auto.');
-        setWhatWeDo([]);
-        setWhatWeDontDo([]);
-        setMotto('Ne concentrăm pe calitate, nu pe cantitate.');
-      } finally {
-        setLoading(false);
+        // valorile default raman
       }
     }
     fetchSettings();
   }, []);
-
-  if (loading) {
-    return (
-      <section className="py-24 bg-gradient-to-b from-black to-gray-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto h-96"></div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="py-24 bg-gradient-to-b from-black to-gray-900">

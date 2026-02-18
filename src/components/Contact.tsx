@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Phone, MessageCircle, MapPin, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatPhoneForDisplay, formatPhoneForWhatsApp, formatPhoneForTel } from '../utils/phoneFormatter';
 
 export default function Contact() {
-  const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('+40726521578');
+  const [whatsapp, setWhatsapp] = useState('+40726521578');
+  const [address, setAddress] = useState('Mărculești, Ialomița, România');
 
   useEffect(() => {
     async function fetchSettings() {
@@ -17,29 +16,17 @@ export default function Contact() {
           .select('contact_phone, whatsapp_number, contact_address')
           .maybeSingle();
 
-        setPhone(data?.contact_phone || '0726 521 578');
-        setWhatsapp(data?.whatsapp_number || '+40726521578');
-        setAddress(data?.contact_address || 'Mărculești, Ialomița');
+        if (data) {
+          if (data.contact_phone) setPhone(data.contact_phone);
+          if (data.whatsapp_number) setWhatsapp(data.whatsapp_number);
+          if (data.contact_address) setAddress(data.contact_address);
+        }
       } catch {
-        setPhone('0726 521 578');
-        setWhatsapp('+40726521578');
-        setAddress('Mărculești, Ialomița');
-      } finally {
-        setLoading(false);
+        // valorile default raman
       }
     }
     fetchSettings();
   }, []);
-
-  if (loading) {
-    return (
-      <section id="contact" className="py-24 bg-gradient-to-b from-gray-900 to-black">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-96"></div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section id="contact" className="py-24 bg-gradient-to-b from-gray-900 to-black">
