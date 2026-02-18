@@ -4,8 +4,6 @@ import Gallery from '../components/Gallery';
 import Reels from '../components/Reels';
 import ReelsCTA from '../components/ReelsCTA';
 import About from '../components/About';
-import Testimonials from '../components/Testimonials';
-import TestimonialSubmission from '../components/TestimonialSubmission';
 import FAQ from '../components/FAQ';
 import Contact from '../components/Contact';
 import SEOHelmet from '../components/SEOHelmet';
@@ -32,8 +30,6 @@ export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: H
       <Reels />
       <ReelsCTA onNavigateToReels={onNavigateToReels} />
       <About />
-      <Testimonials />
-      <TestimonialSubmission />
       <FAQ />
       <Contact />
     </>

@@ -10,6 +10,7 @@ import { SiteDataProvider } from './contexts/SiteDataContext';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const ReelsPage = lazy(() => import('./pages/ReelsPage'));
+const RecenziiPage = lazy(() => import('./pages/RecenziiPage'));
 const PortfolioAdmin = lazy(() => import('./components/PortfolioAdmin'));
 const ComprehensiveAdmin = lazy(() => import('./components/ComprehensiveAdmin'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -96,6 +97,7 @@ function AppContent() {
   const navigate = useNavigate();
   const isReelsPage = location.pathname === '/reels';
   const isAdminPage = location.pathname === '/admin' || location.pathname === '/admin-panel';
+  const isRecenziiPage = location.pathname === '/recenzii';
 
   return (
     <>
@@ -104,7 +106,7 @@ function AppContent() {
       </a>
 
       <ScrollToSection />
-      {!isReelsPage && !isAdminPage && <Header />}
+      {!isReelsPage && !isAdminPage && !isRecenziiPage && <Header />}
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -132,6 +134,14 @@ function AppContent() {
           <Route path="/reels" element={
             <main id="main-content">
               <ReelsPage />
+            </main>
+          } />
+
+          <Route path="/recenzii" element={
+            <main id="main-content">
+              <RecenziiPage />
+              <Footer />
+              <WhatsAppButton />
             </main>
           } />
 
