@@ -159,21 +159,17 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const slides = container.querySelectorAll('[data-idx]');
     slides.forEach(s => observer.observe(s));
 
-    let t1: ReturnType<typeof setTimeout>;
-    let t2: ReturnType<typeof setTimeout>;
-
-    t1 = setTimeout(() => {
-      tryPlay(0);
-      t2 = setTimeout(() => {
+    const delays = [100, 300, 700, 1500, 3000];
+    const timers: ReturnType<typeof setTimeout>[] = delays.map(d =>
+      setTimeout(() => {
         const v = videoRefs.current[0];
-        if (!v || v.paused) tryPlay(0);
-      }, 600);
-    }, 150);
+        if (activeIdxRef.current === 0 && (!v || v.paused)) tryPlay(0);
+      }, d)
+    );
 
     return () => {
       observer.disconnect();
-      clearTimeout(t1);
-      clearTimeout(t2);
+      timers.forEach(clearTimeout);
     };
   }, [reels]);
 
