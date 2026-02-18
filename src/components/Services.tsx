@@ -24,60 +24,61 @@ interface Service {
   is_active: boolean;
 }
 
+const DEFAULT_SERVICES: Service[] = [
+  {
+    id: '1',
+    title: 'Detailing Exterior',
+    description: 'Curățare și tratamente specializate pentru exteriorul mașinii, concepute pentru a proteja și îmbunătăți aspectul suprafețelor expuse. Tratament hidrofob pentru geamuri, parbriz și oglinzi. Degresare și curățare jante.',
+    icon_name: 'Sparkles',
+    is_active: true
+  },
+  {
+    id: '2',
+    title: 'Detailing Interior Premium',
+    description: 'Curățare profesională în profunzime pentru întreg interiorul mașinii, folosind soluții specializate adaptate fiecărui material. Tapițerie, piele, fețe uși, mochete, stâlpi și centuri de siguranță.',
+    icon_name: 'Home',
+    is_active: true
+  },
+  {
+    id: '3',
+    title: 'Recondiționare & Polimerizare Faruri',
+    description: 'Redăm claritatea farurilor printr-un proces profesional de polimerizare pentru o vizibilitate optimă și siguranță sporită.',
+    icon_name: 'Lightbulb',
+    is_active: true
+  },
+  {
+    id: '4',
+    title: 'Detailing Motor',
+    description: 'Curățare meticuloasă a compartimentului motor urmată de aplicarea unui tratament de protecție specializat, pentru un aspect îngrijit și protejarea componentelor.',
+    icon_name: 'Wrench',
+    is_active: true
+  }
+];
+
 export default function Services() {
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
-  const [whatsapp, setWhatsapp] = useState('');
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setFetchError(false);
-      const [servicesData, settingsData] = await Promise.all([
-        supabase.from('services').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('site_settings').select('whatsapp_number').maybeSingle()
-      ]);
-
-      if (servicesData.error) throw servicesData.error;
-      if (servicesData.data) setServices(servicesData.data);
-      setWhatsapp(settingsData.data?.whatsapp_number || '+40726521578');
-    } catch {
-      setFetchError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
+  const [whatsapp, setWhatsapp] = useState('+40726521578');
 
   useEffect(() => {
+    async function fetchData() {
+      try {
+        const [servicesData, settingsData] = await Promise.all([
+          supabase.from('services').select('*').eq('is_active', true).order('display_order'),
+          supabase.from('site_settings').select('whatsapp_number').maybeSingle()
+        ]);
+
+        if (servicesData.data && servicesData.data.length > 0) {
+          setServices(servicesData.data);
+        }
+        if (settingsData.data?.whatsapp_number) {
+          setWhatsapp(settingsData.data.whatsapp_number);
+        }
+      } catch {
+        // valorile default raman
+      }
+    }
     fetchData();
   }, []);
-
-  if (loading) {
-    return (
-      <section id="services" className="py-24 bg-gradient-to-b from-black to-gray-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-96"></div>
-        </div>
-      </section>
-    );
-  }
-
-  if (fetchError) {
-    return (
-      <section id="services" className="py-24 bg-gradient-to-b from-black to-gray-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[300px] gap-4">
-          <p className="text-gray-400 text-lg text-center">Serviciile nu au putut fi încărcate.</p>
-          <button
-            onClick={fetchData}
-            className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
-          >
-            Încearcă din nou
-          </button>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section id="services" className="py-24 bg-gradient-to-b from-black to-gray-900">
@@ -95,7 +96,7 @@ export default function Services() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {services.map((service, index) => {
+          {services.map((service) => {
             const Icon = iconMap[service.icon_name] || Sparkles;
             return (
               <div key={service.id} className="relative group">
