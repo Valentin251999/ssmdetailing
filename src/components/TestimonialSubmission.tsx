@@ -20,14 +20,19 @@ export default function TestimonialSubmission() {
   const [formStatus, setFormStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadReviews = async () => {
-    const { data } = await supabase
-      .from('public_reviews')
-      .select('*')
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    try {
+      const { data, error } = await supabase
+        .from('public_reviews')
+        .select('*')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-    if (data) setReviews(data);
+      if (error) throw error;
+      if (data) setReviews(data);
+    } catch {
+      // Recenziile nu sunt critice, nu afisam eroare
+    }
   };
 
   useEffect(() => {

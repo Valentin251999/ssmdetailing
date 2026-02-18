@@ -122,6 +122,11 @@ export default function ComprehensiveAdmin() {
         supabase.from('faq_items').select('*').order('display_order')
       ]);
 
+      const errors = [settingsRes, servicesRes, galleryRes, portfolioRes, testimonialsRes, reviewsRes, faqRes]
+        .map(r => r.error)
+        .filter(Boolean);
+      if (errors.length > 0) throw errors[0];
+
       if (settingsRes.data) setSettings(settingsRes.data);
       if (servicesRes.data) setServices(servicesRes.data);
       if (galleryRes.data) setGalleryImages(galleryRes.data);
@@ -131,7 +136,7 @@ export default function ComprehensiveAdmin() {
       if (faqRes.data) setFaqItems(faqRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
-      setMessage('Eroare la încărcarea datelor');
+      showMessage('Eroare la încărcarea datelor. Verifică conexiunea la internet.');
     } finally {
       setLoading(false);
     }

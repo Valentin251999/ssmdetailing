@@ -10,26 +10,29 @@ interface GalleryProps {
 export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
   const [galleryItems, setGalleryItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
+  const fetchFeaturedItems = async () => {
+    try {
+      setLoading(true);
+      setFetchError(false);
+      const { data, error } = await supabase
+        .from('portfolio_items')
+        .select('*')
+        .eq('is_featured', true)
+        .order('display_order', { ascending: true })
+        .limit(6);
+
+      if (error) throw error;
+      setGalleryItems(data || []);
+    } catch {
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchFeaturedItems() {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('portfolio_items')
-          .select('*')
-          .eq('is_featured', true)
-          .order('display_order', { ascending: true })
-          .limit(6);
-
-        if (error) throw error;
-        setGalleryItems(data || []);
-      } catch {
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchFeaturedItems();
   }, []);
 
@@ -57,6 +60,16 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-20 space-y-4">
+            <p className="text-gray-400 text-lg">Galeria nu a putut fi încărcată.</p>
+            <button
+              onClick={fetchFeaturedItems}
+              className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
+            >
+              Încearcă din nou
+            </button>
           </div>
         ) : galleryItems.length === 0 ? (
           <div className="text-center py-20">

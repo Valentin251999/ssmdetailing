@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, MoveUp, MoveDown, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -21,6 +21,8 @@ interface VideoReel {
 export default function ReelsAdmin() {
   const [reels, setReels] = useState<VideoReel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,29 +43,38 @@ export default function ReelsAdmin() {
 
   const inputStyle = { color: '#ffffff', backgroundColor: '#111827' };
 
+  const showMsg = (type: 'success' | 'error', text: string) => {
+    setActionMessage({ type, text });
+    setTimeout(() => setActionMessage(null), 4000);
+  };
+
   useEffect(() => {
     fetchReels();
   }, []);
 
   async function fetchReels() {
-    const { data } = await supabase
-      .from('video_reels')
-      .select('*')
-      .order('order_index', { ascending: true });
+    try {
+      setFetchError(false);
+      const { data, error } = await supabase
+        .from('video_reels')
+        .select('*')
+        .order('order_index', { ascending: true });
 
-    if (data) {
-      setReels(data);
+      if (error) throw error;
+      if (data) setReels(data);
+    } catch {
+      setFetchError(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleSave() {
     try {
-      // Validate featured videos limit (max 4)
       if (formData.is_featured) {
         const featuredCount = reels.filter(r => r.is_featured && r.id !== editingId).length;
         if (featuredCount >= 4) {
-          alert('Poți avea maxim 4 videoclipuri principale! Te rog să dezactivezi un alt videoclip principal mai întâi.');
+          showMsg('error', 'Poti avea maxim 4 videoclipuri principale! Dezactiveaza un alt videoclip principal mai intai.');
           return;
         }
       }
@@ -97,19 +108,18 @@ export default function ReelsAdmin() {
         is_featured: false,
       });
       fetchReels();
-      alert('Video salvat cu succes!');
+      showMsg('success', 'Video salvat cu succes!');
     } catch (error) {
       console.error('Eroare la salvare:', error);
-      alert('Eroare la salvare: ' + (error as Error).message);
+      showMsg('error', 'Eroare la salvare: ' + (error as Error).message);
     }
   }
 
   async function handleDelete(id: string) {
-    if (confirm('Sigur vrei să ștergi acest video?')) {
+    if (confirm('Sigur vrei sa stergi acest video?')) {
       try {
         const reel = reels.find(r => r.id === id);
 
-        // Delete video file from storage if it's a Supabase Storage URL
         if (reel?.video_url && reel.video_url.includes('supabase')) {
           const urlParts = reel.video_url.split('/');
           const fileName = urlParts[urlParts.length - 1];
@@ -119,10 +129,10 @@ export default function ReelsAdmin() {
         const { error } = await supabase.from('video_reels').delete().eq('id', id);
         if (error) throw error;
         fetchReels();
-        alert('Video șters cu succes!');
+        showMsg('success', 'Video sters cu succes!');
       } catch (error) {
-        console.error('Eroare la ștergere:', error);
-        alert('Eroare la ștergere: ' + (error as Error).message);
+        console.error('Eroare la stergere:', error);
+        showMsg('error', 'Eroare la stergere: ' + (error as Error).message);
       }
     }
   }
@@ -131,15 +141,13 @@ export default function ReelsAdmin() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('video/')) {
-      alert('Te rog selectează un fișier video valid!');
+      showMsg('error', 'Te rog selecteaza un fisier video valid!');
       return;
     }
 
-    // Validate file size (100MB max)
     if (file.size > 100 * 1024 * 1024) {
-      alert('Fișierul este prea mare! Maxim 100MB permis.');
+      showMsg('error', 'Fisierul este prea mare! Maxim 100MB permis.');
       return;
     }
 
@@ -147,12 +155,10 @@ export default function ReelsAdmin() {
       setUploading(true);
       setUploadProgress(0);
 
-      // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('video-reels')
         .upload(fileName, file, {
           cacheControl: '3600',
@@ -161,18 +167,16 @@ export default function ReelsAdmin() {
 
       if (error) throw error;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('video-reels')
         .getPublicUrl(fileName);
 
-      // Update form data with the video URL
       setFormData({ ...formData, video_url: publicUrl });
       setUploadProgress(100);
-      alert('Video încărcat cu succes!');
+      showMsg('success', 'Video incarcat cu succes!');
     } catch (error) {
       console.error('Eroare la upload:', error);
-      alert('Eroare la încărcarea video-ului: ' + (error as Error).message);
+      showMsg('error', 'Eroare la incarcarea video-ului: ' + (error as Error).message);
     } finally {
       setUploading(false);
       setTimeout(() => setUploadProgress(0), 2000);
@@ -210,7 +214,7 @@ export default function ReelsAdmin() {
       fetchReels();
     } catch (error) {
       console.error('Eroare la mutare:', error);
-      alert('Eroare la mutare: ' + (error as Error).message);
+      showMsg('error', 'Eroare la mutare: ' + (error as Error).message);
     }
   }
 
@@ -250,11 +254,34 @@ export default function ReelsAdmin() {
   }
 
   if (loading) {
-    return <div className="text-white">Se încarcă...</div>;
+    return <div className="text-white">Se incarca...</div>;
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-red-400 text-lg">Video-urile nu au putut fi incarcate.</p>
+        <button
+          onClick={fetchReels}
+          className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
+        >
+          Incearca din nou
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      {actionMessage && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${
+          actionMessage.type === 'success'
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+        }`}>
+          {actionMessage.text}
+        </div>
+      )}
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-white">Video Reels</h3>
         <button

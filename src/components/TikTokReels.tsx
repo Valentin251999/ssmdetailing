@@ -58,6 +58,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [playingStates, setPlayingStates] = useState<{ [key: string]: boolean }>({});
   const [mutedStates, setMutedStates] = useState<{ [key: string]: boolean }>({});
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
@@ -208,6 +210,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const fetchReels = async () => {
     try {
       setIsLoading(true);
+      setFetchError(false);
       const { data, error } = await supabase
         .from('video_reels')
         .select('*')
@@ -224,6 +227,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         await fetchLikeAndCommentCounts(shuffled.map(r => r.id));
       }
     } catch {
+      setFetchError(true);
     } finally {
       setIsLoading(false);
     }
@@ -311,12 +315,15 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
       if (error) throw error;
       setComments(data || []);
-    } catch {}
+    } catch {
+      setCommentError('Nu s-au putut încărca comentariile.');
+    }
   };
 
   const submitComment = async () => {
     if (!newComment.trim() || !selectedVideoForComments) return;
     const name = authorName.trim() || 'Anonim';
+    setCommentError(null);
 
     try {
       const { error } = await supabase
@@ -328,11 +335,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
           session_id: sessionId
         }]);
 
-      if (!error) {
-        setNewComment('');
-        await fetchComments(selectedVideoForComments);
-      }
-    } catch {}
+      if (error) throw error;
+      setNewComment('');
+      await fetchComments(selectedVideoForComments);
+    } catch {
+      setCommentError('Comentariul nu a putut fi trimis. Încearcă din nou.');
+    }
   };
 
   const togglePlay = useCallback((videoId: string) => {
@@ -369,6 +377,20 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     return (
       <section id="reels" className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white text-xl">Se incarca...</div>
+      </section>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <section id="reels" className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+        <div className="text-white text-xl">Nu s-au putut încărca video-urile.</div>
+        <button
+          onClick={fetchReels}
+          className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
+        >
+          Încearcă din nou
+        </button>
       </section>
     );
   }
@@ -630,6 +652,11 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
             </div>
 
             <div className="p-4 border-t border-white/10 space-y-3">
+              {commentError && (
+                <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {commentError}
+                </p>
+              )}
               <input
                 type="text"
                 value={authorName}
