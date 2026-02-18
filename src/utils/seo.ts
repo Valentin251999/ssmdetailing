@@ -88,8 +88,8 @@ export const localBusinessSchema = {
     addressCountry: 'RO'
   },
   sameAs: [
-    'https://www.facebook.com/ssmdetailing',
-    'https://www.instagram.com/ssmdetailing',
-    'https://www.tiktok.com/@ssmdetailing'
+    'https://www.instagram.com/ssm_detailing06/',
+    'https://www.facebook.com/profile.php?id=61568245228709',
+    'https://www.tiktok.com/@stefanmarian66'
   ]
 };
