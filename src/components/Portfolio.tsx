@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Car, Wind, Stars, Lightbulb, Loader2 } from 'lucide-react';
+import { Sparkles, Car, Wind, Stars, Lightbulb, Loader2, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase, type PortfolioItem } from '../lib/supabase';
 import BeforeAfterSlider from './BeforeAfterSlider';
 
@@ -50,6 +51,16 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-900 to-black">
       <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-neutral-400 hover:text-amber-500 transition-colors duration-200 group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
+              <span className="text-sm font-medium">Înapoi acasă</span>
+            </Link>
+          </div>
+
           <div className="text-center mb-4">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
               Portofoliul Nostru
