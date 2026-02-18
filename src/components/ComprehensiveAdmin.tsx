@@ -113,7 +113,7 @@ export default function ComprehensiveAdmin() {
       setLoading(true);
 
       const [settingsRes, servicesRes, galleryRes, portfolioRes, testimonialsRes, reviewsRes, faqRes] = await Promise.all([
-        supabase.from('site_settings').select('*').single(),
+        supabase.from('site_settings').select('*').maybeSingle(),
         supabase.from('services').select('*').order('display_order'),
         supabase.from('gallery_images').select('*').order('display_order'),
         supabase.from('portfolio_items').select('*').order('display_order'),
@@ -121,11 +121,6 @@ export default function ComprehensiveAdmin() {
         supabase.from('public_reviews').select('*').order('created_at', { ascending: false }),
         supabase.from('faq_items').select('*').order('display_order')
       ]);
-
-      const errors = [settingsRes, servicesRes, galleryRes, portfolioRes, testimonialsRes, reviewsRes, faqRes]
-        .map(r => r.error)
-        .filter(Boolean);
-      if (errors.length > 0) throw errors[0];
 
       if (settingsRes.data) setSettings(settingsRes.data);
       if (servicesRes.data) setServices(servicesRes.data);
@@ -415,10 +410,13 @@ export default function ComprehensiveAdmin() {
     { id: 'contact' as Tab, label: 'Contact', icon: Phone }
   ];
 
-  if (loading || !settings) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Se încarcă...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="text-gray-600">Se încarcă...</div>
+        </div>
       </div>
     );
   }
@@ -481,7 +479,13 @@ export default function ComprehensiveAdmin() {
       )}
 
       <div className="container mx-auto px-4 py-8">
-        {activeTab === 'hero' && (
+        {activeTab === 'hero' && !settings && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p className="text-gray-500">Nu s-au putut încărca setările. <button onClick={loadData} className="text-blue-600 underline">Reîncearcă</button></p>
+          </div>
+        )}
+
+        {activeTab === 'hero' && settings && (
           <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
             <h2 className="text-xl font-bold text-gray-900">Secțiunea Hero</h2>
 
@@ -549,7 +553,7 @@ export default function ComprehensiveAdmin() {
           </div>
         )}
 
-        {activeTab === 'about' && (
+        {activeTab === 'about' && settings && (
           <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
             <h2 className="text-xl font-bold text-gray-900">Secțiunea Despre Noi</h2>
 
@@ -1022,7 +1026,7 @@ export default function ComprehensiveAdmin() {
           </div>
         )}
 
-        {activeTab === 'contact' && (
+        {activeTab === 'contact' && settings && (
           <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
             <h2 className="text-xl font-bold text-gray-900">Informații Contact & Footer</h2>
 
