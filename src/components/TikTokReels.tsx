@@ -121,16 +121,16 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     setReels(filtered);
   }, [category, allReels]);
 
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
   useEffect(() => {
     if (reels.length === 0) return;
     const container = containerRef.current;
     if (!container) return;
 
     container.scrollTop = 0;
-    activeIdxRef.current = 0;
-    setActiveIdx(0);
-    setIsPaused(false);
 
+    observerRef.current?.disconnect();
     const observer = new IntersectionObserver(
       (entries) => {
         let best: { idx: number; ratio: number } | null = null;
@@ -155,21 +155,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       },
       { root: container, threshold: [0.5, 0.8, 1.0] }
     );
+    observerRef.current = observer;
 
     const slides = container.querySelectorAll('[data-idx]');
     slides.forEach(s => observer.observe(s));
 
-    const delays = [100, 300, 700, 1500, 3000];
-    const timers: ReturnType<typeof setTimeout>[] = delays.map(d =>
-      setTimeout(() => {
-        const v = videoRefs.current[0];
-        if (activeIdxRef.current === 0 && (!v || v.paused)) tryPlay(0);
-      }, d)
-    );
-
     return () => {
       observer.disconnect();
-      timers.forEach(clearTimeout);
     };
   }, [reels]);
 
@@ -219,6 +211,10 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     videoRefs.current[idx] = el;
     if (el && idx === activeIdxRef.current) {
       tryPlay(idx);
+      if (observerRef.current && el.closest('[data-idx]')) {
+        const slide = el.closest('[data-idx]') as HTMLElement;
+        observerRef.current.observe(slide);
+      }
     }
   }
 
@@ -258,7 +254,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       if (error) throw error;
       const list = data || [];
       setAllReels(list);
-      setReels(list);
       if (list.length > 0) await loadCounts(list.map(r => r.id));
     } catch {
       setFetchError(true);
