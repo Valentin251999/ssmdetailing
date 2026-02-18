@@ -95,9 +95,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   useEffect(() => {
     if (allReels.length === 0) return;
     const channel = supabase
-      .channel('reels-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'video_reel_likes' }, (p) => {
-        const vid = (p.new as any)?.video_reel_id || (p.old as any)?.video_reel_id;
+      .channel(`reels-rt-${Date.now()}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'video_reel_likes' }, (p) => {
+        const vid = (p.new as any)?.video_reel_id;
+        if (vid) refreshLikeCount(vid);
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'video_reel_likes' }, (p) => {
+        const vid = (p.old as any)?.video_reel_id;
         if (vid) refreshLikeCount(vid);
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'video_reel_comments' }, (p) => {
@@ -107,9 +111,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
           if (showComments && commentsVideoId === vid) loadComments(vid);
         }
       })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'video_reel_comments' }, (p) => {
+        const vid = (p.old as any)?.video_reel_id;
+        if (vid) refreshCommentCount(vid);
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [allReels, showComments, commentsVideoId]);
+  }, [allReels.length, showComments, commentsVideoId]);
 
   useEffect(() => {
     let filtered = category === 'all' ? allReels : allReels.filter(r => r.category === category);
