@@ -12,20 +12,28 @@ export default function About() {
 
   useEffect(() => {
     async function fetchSettings() {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('about_eyebrow, about_title, about_intro, about_what_we_do, about_what_we_dont_do, about_motto')
-        .single();
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('about_eyebrow, about_title, about_intro, about_what_we_do, about_what_we_dont_do, about_motto')
+          .maybeSingle();
 
-      if (data) {
-        setEyebrow(data.about_eyebrow || 'Despre Noi');
-        setTitle(data.about_title || 'Atelier Specializat');
-        setIntro(data.about_intro || 'SSM Detailing este un atelier specializat exclusiv pe interior auto.');
-        setWhatWeDo(data.about_what_we_do || []);
-        setWhatWeDontDo(data.about_what_we_dont_do || []);
-        setMotto(data.about_motto || 'Ne concentrăm pe calitate, nu pe cantitate.');
+        setEyebrow(data?.about_eyebrow || 'Despre Noi');
+        setTitle(data?.about_title || 'Atelier Specializat');
+        setIntro(data?.about_intro || 'SSM Detailing este un atelier specializat exclusiv pe interior auto.');
+        setWhatWeDo(data?.about_what_we_do || []);
+        setWhatWeDontDo(data?.about_what_we_dont_do || []);
+        setMotto(data?.about_motto || 'Ne concentrăm pe calitate, nu pe cantitate.');
+      } catch {
+        setEyebrow('Despre Noi');
+        setTitle('Atelier Specializat');
+        setIntro('SSM Detailing este un atelier specializat exclusiv pe interior auto.');
+        setWhatWeDo([]);
+        setWhatWeDontDo([]);
+        setMotto('Ne concentrăm pe calitate, nu pe cantitate.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchSettings();
   }, []);

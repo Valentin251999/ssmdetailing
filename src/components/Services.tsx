@@ -36,7 +36,7 @@ export default function Services() {
       setFetchError(false);
       const [servicesData, settingsData] = await Promise.all([
         supabase.from('services').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('site_settings').select('whatsapp_number').single()
+        supabase.from('site_settings').select('whatsapp_number').maybeSingle()
       ]);
 
       if (servicesData.error) throw servicesData.error;

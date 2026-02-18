@@ -14,20 +14,28 @@ export default function Footer() {
 
   useEffect(() => {
     async function fetchSettings() {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('footer_tagline, contact_phone, contact_address, instagram_url, facebook_url, tiktok_url')
-        .single();
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('footer_tagline, contact_phone, contact_address, instagram_url, facebook_url, tiktok_url')
+          .maybeSingle();
 
-      if (data) {
-        setTagline(data.footer_tagline || 'Atelier specializat interior. Rezultate profesionale.');
-        setPhone(data.contact_phone || '0726 521 578');
-        setAddress(data.contact_address || 'Mărculești, Ialomița, România');
-        setInstagram(data.instagram_url || 'https://www.instagram.com/ssm_detailing06/');
-        setFacebook(data.facebook_url || 'https://www.facebook.com/profile.php?id=61568245228709');
-        setTiktok(data.tiktok_url || 'https://www.tiktok.com/@stefanmarian66');
+        setTagline(data?.footer_tagline || 'Atelier specializat interior. Rezultate profesionale.');
+        setPhone(data?.contact_phone || '0726 521 578');
+        setAddress(data?.contact_address || 'Mărculești, Ialomița, România');
+        setInstagram(data?.instagram_url || 'https://www.instagram.com/ssm_detailing06/');
+        setFacebook(data?.facebook_url || 'https://www.facebook.com/profile.php?id=61568245228709');
+        setTiktok(data?.tiktok_url || 'https://www.tiktok.com/@stefanmarian66');
+      } catch {
+        setTagline('Atelier specializat interior. Rezultate profesionale.');
+        setPhone('0726 521 578');
+        setAddress('Mărculești, Ialomița, România');
+        setInstagram('https://www.instagram.com/ssm_detailing06/');
+        setFacebook('https://www.facebook.com/profile.php?id=61568245228709');
+        setTiktok('https://www.tiktok.com/@stefanmarian66');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchSettings();
   }, []);

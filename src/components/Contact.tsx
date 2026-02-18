@@ -11,17 +11,22 @@ export default function Contact() {
 
   useEffect(() => {
     async function fetchSettings() {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('contact_phone, whatsapp_number, contact_address')
-        .single();
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('contact_phone, whatsapp_number, contact_address')
+          .maybeSingle();
 
-      if (data) {
-        setPhone(data.contact_phone || '0726 521 578');
-        setWhatsapp(data.whatsapp_number || '+40726521578');
-        setAddress(data.contact_address || 'Mărculești, Ialomița');
+        setPhone(data?.contact_phone || '0726 521 578');
+        setWhatsapp(data?.whatsapp_number || '+40726521578');
+        setAddress(data?.contact_address || 'Mărculești, Ialomița');
+      } catch {
+        setPhone('0726 521 578');
+        setWhatsapp('+40726521578');
+        setAddress('Mărculești, Ialomița');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchSettings();
   }, []);

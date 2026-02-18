@@ -14,20 +14,28 @@ export default function Hero() {
 
   useEffect(() => {
     async function fetchSettings() {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('hero_eyebrow, hero_title, hero_subtitle, hero_cta_primary, hero_cta_secondary, whatsapp_number')
-        .single();
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('hero_eyebrow, hero_title, hero_subtitle, hero_cta_primary, hero_cta_secondary, whatsapp_number')
+          .maybeSingle();
 
-      if (data) {
-        setHeroEyebrow(data.hero_eyebrow || 'Atelier Specializat Interior Auto');
-        setHeroTitle(data.hero_title || 'Transformăm Interioarele Auto în Opere de Artă');
-        setHeroSubtitle(data.hero_subtitle || 'Specializați exclusiv pe interioare premium');
-        setCtaPrimary(data.hero_cta_primary || 'Programează-te');
-        setCtaSecondary(data.hero_cta_secondary || 'Vezi Portfolio');
-        setWhatsapp(data.whatsapp_number || '+40726521578');
+        setHeroEyebrow(data?.hero_eyebrow || 'Atelier Specializat Interior Auto');
+        setHeroTitle(data?.hero_title || 'Transformăm Interioarele Auto în Opere de Artă');
+        setHeroSubtitle(data?.hero_subtitle || 'Specializați exclusiv pe interioare premium');
+        setCtaPrimary(data?.hero_cta_primary || 'Sună Acum');
+        setCtaSecondary(data?.hero_cta_secondary || 'Scrie pe WhatsApp');
+        setWhatsapp(data?.whatsapp_number || '+40726521578');
+      } catch {
+        setHeroEyebrow('Atelier Specializat Interior Auto');
+        setHeroTitle('Transformăm Interioarele Auto în Opere de Artă');
+        setHeroSubtitle('Specializați exclusiv pe interioare premium');
+        setCtaPrimary('Sună Acum');
+        setCtaSecondary('Scrie pe WhatsApp');
+        setWhatsapp('+40726521578');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchSettings();
   }, []);

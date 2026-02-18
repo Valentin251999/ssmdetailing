@@ -11,7 +11,7 @@ export default function WhatsAppButton() {
       const { data } = await supabase
         .from('site_settings')
         .select('whatsapp_number')
-        .single();
+        .maybeSingle();
 
       setWhatsapp(data?.whatsapp_number || '+40726521578');
     }
