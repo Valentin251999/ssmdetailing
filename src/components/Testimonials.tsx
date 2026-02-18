@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { ReviewSchema } from './SchemaMarkup';
 
 interface Testimonial {
   id: string;
@@ -40,6 +41,7 @@ export default function Testimonials() {
 
   return (
     <section className="py-24 bg-gradient-to-b from-gray-900 to-black">
+      <ReviewSchema reviews={testimonials} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <span className="text-gray-500 font-medium text-sm uppercase tracking-wide">

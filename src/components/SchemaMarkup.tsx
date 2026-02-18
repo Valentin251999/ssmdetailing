@@ -176,6 +176,46 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
   return null;
 }
 
+interface ReviewSchemaProps {
+  reviews: Array<{
+    customer_name: string;
+    content: string;
+    rating: number;
+  }>;
+}
+
+export function ReviewSchema({ reviews }: ReviewSchemaProps) {
+  useEffect(() => {
+    if (reviews.length === 0) return;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      '@id': `${BASE_URL}/#organization`,
+      name: 'SSM Detailing',
+      review: reviews.map((review) => ({
+        '@type': 'Review',
+        author: {
+          '@type': 'Person',
+          name: review.customer_name
+        },
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: review.rating,
+          bestRating: 5
+        },
+        reviewBody: review.content
+      }))
+    };
+
+    injectSchema('reviews', schema);
+
+    return () => removeSchema('reviews');
+  }, [reviews]);
+
+  return null;
+}
+
 interface VideoSchemaProps {
   videos: Array<{
     title: string;

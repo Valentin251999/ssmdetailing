@@ -23,8 +23,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
 
         if (error) throw error;
         setGalleryItems(data || []);
-      } catch (err) {
-        console.error('Error loading gallery:', err);
+      } catch {
       } finally {
         setLoading(false);
       }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Sparkles, Car, Wind, Stars, Lightbulb, Loader2 } from 'lucide-react';
 import { supabase, type PortfolioItem } from '../lib/supabase';
 
@@ -103,28 +103,28 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
                 <div className="p-4">
                   <h3 className="text-white font-semibold mb-3 text-lg">{item.title}</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: item.before_image_url, title: item.title, type: 'before' })}>
+                    <button type="button" className="relative cursor-pointer aspect-[4/3] w-full text-left" onClick={() => setLightboxImage({ url: item.before_image_url, title: item.title, type: 'before' })} aria-label={`Vezi imaginea inainte: ${item.title}`}>
                       <img
                         src={item.before_image_url}
-                        alt={`${item.title} - Înainte`}
-                        className="w-full h-40 object-cover rounded-lg"
+                        alt={`${item.title} - Înainte de detailing`}
+                        className="w-full h-full object-cover rounded-lg"
                         loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-lg flex items-end p-2">
                         <span className="text-white text-sm font-medium">Înainte</span>
                       </div>
-                    </div>
-                    <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: item.after_image_url, title: item.title, type: 'after' })}>
+                    </button>
+                    <button type="button" className="relative cursor-pointer aspect-[4/3] w-full text-left" onClick={() => setLightboxImage({ url: item.after_image_url, title: item.title, type: 'after' })} aria-label={`Vezi imaginea dupa: ${item.title}`}>
                       <img
                         src={item.after_image_url}
-                        alt={`${item.title} - După`}
-                        className="w-full h-40 object-cover rounded-lg"
+                        alt={`${item.title} - Dupa detailing`}
+                        className="w-full h-full object-cover rounded-lg"
                         loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-amber-600/70 to-transparent rounded-lg flex items-end p-2">
                         <span className="text-white text-sm font-medium">După</span>
                       </div>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -136,12 +136,18 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
 
       {lightboxImage && (
         <div
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
           onClick={() => setLightboxImage(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setLightboxImage(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${lightboxImage.title} - ${lightboxImage.type === 'before' ? 'Înainte' : 'După'}`}
         >
           <button
             onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 text-white hover:text-amber-500 transition-colors"
+            className="absolute top-4 right-4 text-white hover:text-amber-500 transition-colors z-10 w-12 h-12 flex items-center justify-center"
+            aria-label="Inchide"
+            autoFocus
           >
             <X className="w-8 h-8" />
           </button>
@@ -154,7 +160,7 @@ export default function Portfolio({ onNavigateToHome }: PortfolioProps) {
             </div>
             <img
               src={lightboxImage.url}
-              alt={lightboxImage.title}
+              alt={`${lightboxImage.title} - ${lightboxImage.type === 'before' ? 'Înainte de detailing' : 'Dupa detailing'}`}
               className="w-full max-h-[80vh] object-contain rounded-2xl"
             />
           </div>

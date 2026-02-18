@@ -159,6 +159,10 @@ export default function Reels() {
         <div
           className="fixed inset-0 bg-black z-50 flex items-center justify-center"
           onClick={() => handleCloseModal()}
+          onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={selectedReel.title}
         >
           <div
             className="relative w-full h-full max-w-[500px] bg-black"
@@ -190,8 +194,10 @@ export default function Reels() {
                     handleCloseModal();
                   }}
                   className="absolute top-4 right-4 z-[60] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  aria-label="Inchide"
+                  autoFocus
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
@@ -204,6 +210,7 @@ export default function Reels() {
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  title={selectedReel.title}
                 />
                 <button
                   onClick={(e) => {
@@ -211,8 +218,10 @@ export default function Reels() {
                     handleCloseModal();
                   }}
                   className="absolute top-4 right-4 z-[60] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  aria-label="Inchide"
+                  autoFocus
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>

@@ -124,7 +124,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         await fetchLikeAndCommentCounts(shuffled.map(r => r.id));
       }
     } catch (error) {
-      console.error('Error fetching reels:', error);
+      void error;
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         setLikedVideos(new Set(data.map(like => like.video_reel_id)));
       }
     } catch (error) {
-      console.error('Error checking user likes:', error);
+      void error;
     }
   };
 
@@ -181,7 +181,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       setLikeCounts(likesMap);
       setCommentCounts(commentsMap);
     } catch (error) {
-      console.error('Error fetching counts:', error);
+      void error;
     }
   };
 
@@ -232,7 +232,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       if (error) throw error;
       setComments(data || []);
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      void error;
     }
   };
 
@@ -260,7 +260,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         await fetchComments(selectedVideoForComments);
       }
     } catch (error) {
-      console.error('Error submitting comment:', error);
+      void error;
     }
   };
 
@@ -292,7 +292,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       if (currentVideo && currentReel) {
         currentVideo.muted = false;
         currentVideo.play().catch((error) => {
-          console.log('Autoplay with sound failed, trying muted:', error);
+          void error;
           currentVideo.muted = true;
           currentVideo.play().catch(() => {});
         });
@@ -309,7 +309,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         if (firstVideo) {
           firstVideo.muted = false;
           firstVideo.play().catch((error) => {
-            console.log('First video autoplay with sound failed, trying muted:', error);
+            void error;
             firstVideo.muted = true;
             firstVideo.play().catch(() => {});
           });
@@ -490,14 +490,11 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 webkit-playsinline="true"
                 x5-playsinline="true"
                 onClick={() => handleVideoClick(reel.id)}
-                onError={(e) => console.error('Video error:', e)}
                 onLoadedData={(e) => {
-                  console.log('Video loaded:', reel.title);
                   if (index === currentIndex) {
                     const video = e.currentTarget;
                     video.muted = false;
-                    video.play().catch((error) => {
-                      console.log('Auto-play with sound failed on load, trying muted:', error);
+                    video.play().catch(() => {
                       video.muted = true;
                       video.play().catch(() => {});
                     });
@@ -509,10 +506,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   video.play().catch(() => {});
                 }}
                 onStalled={(e) => {
-                  console.log('Video stalled, attempting to continue...', reel.title);
                   e.currentTarget.load();
                 }}
-                onWaiting={() => console.log('Video waiting for data...', reel.title)}
                 className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
               />
             )}
