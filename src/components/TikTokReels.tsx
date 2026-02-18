@@ -159,11 +159,21 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const slides = container.querySelectorAll('[data-idx]');
     slides.forEach(s => observer.observe(s));
 
-    const t = setTimeout(() => tryPlay(0), 300);
+    let t1: ReturnType<typeof setTimeout>;
+    let t2: ReturnType<typeof setTimeout>;
+
+    t1 = setTimeout(() => {
+      tryPlayRef.current(0);
+      t2 = setTimeout(() => {
+        const v = videoRefs.current[0];
+        if (!v || v.paused) tryPlayRef.current(0);
+      }, 600);
+    }, 150);
 
     return () => {
       observer.disconnect();
-      clearTimeout(t);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [reels]);
 
@@ -212,7 +222,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   function setVideoRef(el: HTMLVideoElement | null, idx: number) {
     videoRefs.current[idx] = el;
     if (el && idx === activeIdxRef.current) {
-      tryPlay(idx);
+      tryPlayRef.current(idx);
     }
   }
 
