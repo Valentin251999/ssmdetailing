@@ -163,10 +163,10 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     let t2: ReturnType<typeof setTimeout>;
 
     t1 = setTimeout(() => {
-      tryPlayRef.current(0);
+      tryPlay(0);
       t2 = setTimeout(() => {
         const v = videoRefs.current[0];
-        if (!v || v.paused) tryPlayRef.current(0);
+        if (!v || v.paused) tryPlay(0);
       }, 600);
     }, 150);
 
@@ -222,7 +222,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   function setVideoRef(el: HTMLVideoElement | null, idx: number) {
     videoRefs.current[idx] = el;
     if (el && idx === activeIdxRef.current) {
-      tryPlayRef.current(idx);
+      tryPlay(idx);
     }
   }
 
