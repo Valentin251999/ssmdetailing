@@ -447,17 +447,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         </button>
       )}
 
-      {activeReel && isLocalVideo(activeReel.video_url) && (
-        <button
-          onClick={handleToggleMute}
-          className="fixed bottom-32 right-4 z-50 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-lg active:scale-95"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-          aria-label={isMuted ? 'Porneste sunetul' : 'Opreste sunetul'}
-        >
-          {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-        </button>
-      )}
-
       <div
         ref={containerRef}
         className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
@@ -564,6 +553,19 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
               </div>
 
               <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-20">
+                {local && (
+                  <button
+                    onClick={handleToggleMute}
+                    className="flex flex-col items-center gap-1 group"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                    aria-label={isMuted ? 'Porneste sunetul' : 'Opreste sunetul'}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all">
+                      {isMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+                    </div>
+                  </button>
+                )}
+
                 <button
                   onClick={() => toggleLike(reel.id)}
                   className="flex flex-col items-center gap-1 group"
