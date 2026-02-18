@@ -1,8 +1,11 @@
+import { useNavigate } from 'react-router-dom';
 import TikTokReels from '../components/TikTokReels';
 import SEOHelmet from '../components/SEOHelmet';
 import { BreadcrumbSchema } from '../components/SchemaMarkup';
 
 export default function ReelsPage() {
+  const navigate = useNavigate();
+
   return (
     <>
       <SEOHelmet
@@ -15,7 +18,7 @@ export default function ReelsPage() {
         { name: 'Acasă', url: 'https://ssmdetailing.ro/' },
         { name: 'Reels', url: 'https://ssmdetailing.ro/reels' }
       ]} />
-      <TikTokReels />
+      <TikTokReels onNavigateToHome={() => navigate('/')} />
     </>
   );
 }
