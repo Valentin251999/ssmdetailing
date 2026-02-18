@@ -60,8 +60,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
-  const [playingStates, setPlayingStates] = useState<{ [key: string]: boolean }>({});
-  const [mutedStates, setMutedStates] = useState<{ [key: string]: boolean }>({});
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
   const [commentCounts, setCommentCounts] = useState<{ [key: string]: number }>({});
@@ -70,8 +70,10 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [authorName, setAuthorName] = useState('');
+
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const activeVideoIdRef = useRef<string | null>(null);
   const sessionId = getSessionId();
 
   useEffect(() => {
@@ -86,9 +88,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       .channel('reels-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'video_reel_likes' }, (payload) => {
         const videoId = (payload.new as { video_reel_id?: string })?.video_reel_id || (payload.old as { video_reel_id?: string })?.video_reel_id;
-        if (videoId) {
-          fetchSingleLikeCount(videoId);
-        }
+        if (videoId) fetchSingleLikeCount(videoId);
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'video_reel_comments' }, (payload) => {
         const videoId = (payload.new as { video_reel_id?: string })?.video_reel_id;
@@ -101,21 +101,14 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [reels, showCommentsModal, selectedVideoForComments]);
 
   useEffect(() => {
-    Object.keys(videoRefs.current).forEach(id => {
-      const video = videoRefs.current[id];
-      if (video) {
-        video.pause();
-        video.currentTime = 0;
-        setPlayingStates(prev => ({ ...prev, [id]: false }));
-      }
-    });
+    stopAllVideos();
     setCurrentIndex(0);
+    setIsPlaying(false);
+    activeVideoIdRef.current = null;
 
     if (selectedCategory === 'all') {
       setFilteredReels(reels);
@@ -127,74 +120,125 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   useEffect(() => {
     if (filteredReels.length === 0) return;
 
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const videoId = (entry.target as HTMLElement).dataset.videoid;
           if (!videoId) return;
-          const video = videoRefs.current[videoId];
-          if (!video) return;
 
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.8) {
-            Object.keys(videoRefs.current).forEach(id => {
-              if (id !== videoId) {
-                const v = videoRefs.current[id];
-                if (v) {
-                  v.pause();
-                  v.currentTime = 0;
-                  setPlayingStates(prev => ({ ...prev, [id]: false }));
-                }
-              }
-            });
-
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
             const idx = filteredReels.findIndex(r => r.id === videoId);
             if (idx !== -1) setCurrentIndex(idx);
 
-            video.muted = false;
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  setPlayingStates(prev => ({ ...prev, [videoId]: true }));
-                  setMutedStates(prev => ({ ...prev, [videoId]: false }));
-                })
-                .catch(() => {
-                  video.muted = true;
-                  video.play().then(() => {
-                    setPlayingStates(prev => ({ ...prev, [videoId]: true }));
-                    setMutedStates(prev => ({ ...prev, [videoId]: true }));
-                  }).catch(() => {});
-                });
+            if (activeVideoIdRef.current !== videoId) {
+              playVideo(videoId);
             }
           } else {
-            if (!video.paused) {
+            const video = videoRefs.current[videoId];
+            if (video && !video.paused) {
               video.pause();
-              setPlayingStates(prev => ({ ...prev, [videoId]: false }));
+              if (activeVideoIdRef.current === videoId) {
+                activeVideoIdRef.current = null;
+                setIsPlaying(false);
+              }
             }
           }
         });
       },
-      { threshold: 0.8, rootMargin: '0px' }
+      { threshold: [0.7], rootMargin: '0px' }
     );
 
     const wrappers = document.querySelectorAll('[data-videoid]');
-    wrappers.forEach(el => observerRef.current?.observe(el));
+    wrappers.forEach(el => observer.observe(el));
 
-    return () => {
-      observerRef.current?.disconnect();
-    };
+    return () => { observer.disconnect(); };
   }, [filteredReels]);
+
+  function stopAllVideos() {
+    Object.keys(videoRefs.current).forEach(id => {
+      const video = videoRefs.current[id];
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
+    });
+  }
+
+  function playVideo(videoId: string) {
+    Object.keys(videoRefs.current).forEach(id => {
+      if (id !== videoId) {
+        const v = videoRefs.current[id];
+        if (v && !v.paused) {
+          v.pause();
+          v.currentTime = 0;
+        }
+      }
+    });
+
+    const video = videoRefs.current[videoId];
+    if (!video) return;
+
+    activeVideoIdRef.current = videoId;
+    video.muted = isMuted;
+
+    const tryPlay = () => {
+      const p = video.play();
+      if (p !== undefined) {
+        p.then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
+          video.muted = true;
+          setIsMuted(true);
+          video.play().then(() => {
+            setIsPlaying(true);
+          }).catch(() => {});
+        });
+      }
+    };
+
+    if (video.readyState >= 3) {
+      tryPlay();
+    } else {
+      video.load();
+      video.addEventListener('canplay', tryPlay, { once: true });
+    }
+  }
+
+  const handleTogglePlay = useCallback((videoId: string) => {
+    const video = videoRefs.current[videoId];
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().then(() => {
+        setIsPlaying(true);
+        activeVideoIdRef.current = videoId;
+      }).catch(() => {});
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const handleToggleMute = useCallback(() => {
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+
+    if (activeVideoIdRef.current) {
+      const video = videoRefs.current[activeVideoIdRef.current];
+      if (video) video.muted = newMuted;
+    }
+
+    Object.keys(videoRefs.current).forEach(id => {
+      const v = videoRefs.current[id];
+      if (v) v.muted = newMuted;
+    });
+  }, [isMuted]);
 
   const fetchSingleLikeCount = async (videoId: string) => {
     const { count } = await supabase
       .from('video_reel_likes')
       .select('*', { count: 'exact', head: true })
       .eq('video_reel_id', videoId);
-
     setLikeCounts(prev => ({ ...prev, [videoId]: count || 0 }));
   };
 
@@ -203,7 +247,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       .from('video_reel_comments')
       .select('*', { count: 'exact', head: true })
       .eq('video_reel_id', videoId);
-
     setCommentCounts(prev => ({ ...prev, [videoId]: count || 0 }));
   };
 
@@ -239,10 +282,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         .from('video_reel_likes')
         .select('video_reel_id')
         .eq('session_id', sessionId);
-
-      if (data) {
-        setLikedVideos(new Set(data.map(like => like.video_reel_id)));
-      }
+      if (data) setLikedVideos(new Set(data.map(like => like.video_reel_id)));
     } catch {}
   };
 
@@ -281,21 +321,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       newLiked.delete(videoId);
       setLikedVideos(newLiked);
       setLikeCounts(prev => ({ ...prev, [videoId]: Math.max(0, (prev[videoId] || 0) - 1) }));
-
-      await supabase
-        .from('video_reel_likes')
-        .delete()
-        .eq('video_reel_id', videoId)
-        .eq('session_id', sessionId);
+      await supabase.from('video_reel_likes').delete().eq('video_reel_id', videoId).eq('session_id', sessionId);
     } else {
       const newLiked = new Set(likedVideos);
       newLiked.add(videoId);
       setLikedVideos(newLiked);
       setLikeCounts(prev => ({ ...prev, [videoId]: (prev[videoId] || 0) + 1 }));
-
-      await supabase
-        .from('video_reel_likes')
-        .insert([{ video_reel_id: videoId, session_id: sessionId }]);
+      await supabase.from('video_reel_likes').insert([{ video_reel_id: videoId, session_id: sessionId }]);
     }
   };
 
@@ -312,7 +344,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         .select('*')
         .eq('video_reel_id', videoId)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setComments(data || []);
     } catch {
@@ -334,7 +365,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
           content: newComment.trim(),
           session_id: sessionId
         }]);
-
       if (error) throw error;
       setNewComment('');
       await fetchComments(selectedVideoForComments);
@@ -342,28 +372,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       setCommentError('Comentariul nu a putut fi trimis. Încearcă din nou.');
     }
   };
-
-  const togglePlay = useCallback((videoId: string) => {
-    const video = videoRefs.current[videoId];
-    if (!video) return;
-
-    if (video.paused) {
-      video.play().then(() => {
-        setPlayingStates(prev => ({ ...prev, [videoId]: true }));
-      }).catch(() => {});
-    } else {
-      video.pause();
-      setPlayingStates(prev => ({ ...prev, [videoId]: false }));
-    }
-  }, []);
-
-  const toggleMute = useCallback((videoId: string) => {
-    const video = videoRefs.current[videoId];
-    if (!video) return;
-
-    video.muted = !video.muted;
-    setMutedStates(prev => ({ ...prev, [videoId]: video.muted }));
-  }, []);
 
   const categories = [
     { value: 'all', label: 'Toate' },
@@ -403,6 +411,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     );
   }
 
+  const activeReel = filteredReels[currentIndex];
+
   return (
     <section id="reels" className="relative">
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 backdrop-blur-sm rounded-full px-3 md:px-4 py-2 shadow-lg">
@@ -437,173 +447,174 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         </button>
       )}
 
+      {activeReel && isLocalVideo(activeReel.video_url) && (
+        <button
+          onClick={handleToggleMute}
+          className="fixed bottom-32 right-4 z-50 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-all shadow-lg active:scale-95"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+          aria-label={isMuted ? 'Porneste sunetul' : 'Opreste sunetul'}
+        >
+          {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+        </button>
+      )}
+
       <div
+        ref={containerRef}
         className="h-screen overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
-        style={{ scrollBehavior: 'smooth' }}
       >
-        {filteredReels.map((reel, index) => (
-          <div
-            key={reel.id}
-            data-videoid={isLocalVideo(reel.video_url) ? reel.id : undefined}
-            className="relative h-screen w-full snap-start snap-always flex items-center justify-center bg-black"
-          >
-            {reel.video_url.includes('tiktok.com') ? (
-              <div className="absolute inset-0 w-full h-full flex items-center justify-center">
-                <img
-                  src={reel.thumbnail_url || 'https://images.pexels.com/photos/164634/pexels-photo-164634.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                  alt={reel.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
+        {filteredReels.map((reel, index) => {
+          const local = isLocalVideo(reel.video_url);
+          const isActive = index === currentIndex;
+
+          return (
+            <div
+              key={reel.id}
+              data-videoid={local ? reel.id : undefined}
+              className="relative h-screen w-full snap-start snap-always flex items-center justify-center bg-black"
+            >
+              {reel.video_url.includes('tiktok.com') ? (
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+                  <img
+                    src={reel.thumbnail_url || 'https://images.pexels.com/photos/164634/pexels-photo-164634.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                    alt={reel.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                    <a
+                      href={reel.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-4 group"
+                    >
+                      <div className="w-24 h-24 rounded-full bg-red-500 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl">
+                        <Play className="w-12 h-12 text-white ml-2" fill="currentColor" />
+                      </div>
+                      <div className="px-6 py-3 bg-white rounded-full flex items-center gap-2 hover:bg-red-500 hover:text-white transition-all">
+                        <ExternalLink className="w-5 h-5" />
+                        <span className="font-bold">Vezi pe TikTok</span>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              ) : reel.video_url.includes('youtube.com') || reel.video_url.includes('youtu.be') ? (
+                <iframe
+                  src={isActive
+                    ? `https://www.youtube.com/embed/${extractYouTubeId(reel.video_url)}?autoplay=1&mute=1&loop=1&playlist=${extractYouTubeId(reel.video_url)}`
+                    : `https://www.youtube.com/embed/${extractYouTubeId(reel.video_url)}?autoplay=0&mute=1`
+                  }
+                  className="absolute inset-0 w-full h-full"
+                  allowFullScreen
+                  allow="autoplay; encrypted-media"
+                  title={reel.title}
                 />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-                  <a
-                    href={reel.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-4 group"
-                  >
-                    <div className="w-24 h-24 rounded-full bg-red-500 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl">
-                      <Play className="w-12 h-12 text-white ml-2" fill="currentColor" />
-                    </div>
-                    <div className="px-6 py-3 bg-white rounded-full flex items-center gap-2 hover:bg-red-500 hover:text-white transition-all">
-                      <ExternalLink className="w-5 h-5" />
-                      <span className="font-bold">Vezi pe TikTok</span>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            ) : reel.video_url.includes('youtube.com') || reel.video_url.includes('youtu.be') ? (
-              <iframe
-                src={index === currentIndex
-                  ? `https://www.youtube.com/embed/${extractYouTubeId(reel.video_url)}?autoplay=1&mute=1&loop=1&playlist=${extractYouTubeId(reel.video_url)}`
-                  : `https://www.youtube.com/embed/${extractYouTubeId(reel.video_url)}?autoplay=0&mute=1`
-                }
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                allow="autoplay; encrypted-media"
-              />
-            ) : reel.video_url.includes('instagram.com') ? (
-              <iframe
-                src={`${reel.video_url}embed`}
-                className="absolute inset-0 w-full h-full"
-                allowFullScreen
-                scrolling="no"
-              />
-            ) : (
-              <video
-                ref={(el) => {
-                  if (el) videoRefs.current[reel.id] = el;
-                }}
-                src={reel.video_url}
-                poster={reel.thumbnail_url}
-                loop
-                playsInline
-                preload={index <= 1 ? 'auto' : 'metadata'}
-                muted
-                webkit-playsinline="true"
-                x5-playsinline="true"
-                onClick={() => togglePlay(reel.id)}
-                onPlay={() => setPlayingStates(prev => ({ ...prev, [reel.id]: true }))}
-                onPause={() => setPlayingStates(prev => ({ ...prev, [reel.id]: false }))}
-                className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
-              />
-            )}
+              ) : reel.video_url.includes('instagram.com') ? (
+                <iframe
+                  src={`${reel.video_url}embed`}
+                  className="absolute inset-0 w-full h-full"
+                  allowFullScreen
+                  scrolling="no"
+                  title={reel.title}
+                />
+              ) : (
+                <video
+                  ref={(el) => { if (el) videoRefs.current[reel.id] = el; }}
+                  src={reel.video_url}
+                  poster={reel.thumbnail_url}
+                  loop
+                  playsInline
+                  preload={index <= 1 ? 'auto' : 'metadata'}
+                  muted={isMuted}
+                  onClick={() => handleTogglePlay(reel.id)}
+                  onPlay={() => {
+                    if (activeVideoIdRef.current === reel.id) setIsPlaying(true);
+                  }}
+                  onPause={() => {
+                    if (activeVideoIdRef.current === reel.id) setIsPlaying(false);
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                />
+              )}
 
-            {isLocalVideo(reel.video_url) && !playingStates[reel.id] && (
-              <button
-                onClick={() => togglePlay(reel.id)}
-                className="absolute inset-0 flex items-center justify-center bg-black/20 transition-all cursor-pointer z-10"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center active:scale-95 transition-transform">
-                  <Play className="w-10 h-10 text-black ml-2" fill="currentColor" />
-                </div>
-              </button>
-            )}
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20">
-              <div className="max-w-lg">
-                <h3 className="text-white text-xl font-bold mb-2">{reel.title}</h3>
-                {reel.description && (
-                  <p className="text-white/90 text-sm mb-4">{reel.description}</p>
-                )}
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
-                    {reel.category.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-20">
-              {isLocalVideo(reel.video_url) && (
+              {local && isActive && !isPlaying && (
                 <button
-                  onClick={() => toggleMute(reel.id)}
-                  className="flex flex-col items-center gap-1 group"
+                  onClick={() => handleTogglePlay(reel.id)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/20 transition-all cursor-pointer z-10"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
-                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all">
-                    {mutedStates[reel.id] ? (
-                      <VolumeX className="w-6 h-6 text-white" />
-                    ) : (
-                      <Volume2 className="w-6 h-6 text-white" />
-                    )}
+                  <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center active:scale-95 transition-transform">
+                    <Play className="w-10 h-10 text-black ml-2" fill="currentColor" />
                   </div>
                 </button>
               )}
 
-              <button
-                onClick={() => toggleLike(reel.id)}
-                className="flex flex-col items-center gap-1 group"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <div className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-all ${
-                  likedVideos.has(reel.id)
-                    ? 'bg-red-500'
-                    : 'bg-white/20 group-hover:bg-red-500'
-                }`}>
-                  <Heart
-                    className={`w-6 h-6 ${likedVideos.has(reel.id) ? 'text-white fill-white' : 'text-white'}`}
-                  />
-                </div>
-                <span className="text-white text-xs font-medium">
-                  {likeCounts[reel.id] || 0}
-                </span>
-              </button>
-
-              <button
-                onClick={() => openComments(reel.id)}
-                className="flex flex-col items-center gap-1 group"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-blue-500 transition-all">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-white text-xs font-medium">
-                  {commentCounts[reel.id] || 0}
-                </span>
-              </button>
-
-              {reel.tiktok_url && (
-                <a
-                  href={reel.tiktok_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1 group"
-                >
-                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white transition-all">
-                    <ExternalLink className="w-6 h-6 text-white group-hover:text-black" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20">
+                <div className="max-w-lg">
+                  <h3 className="text-white text-xl font-bold mb-2">{reel.title}</h3>
+                  {reel.description && (
+                    <p className="text-white/90 text-sm mb-4">{reel.description}</p>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
+                      {reel.category.toUpperCase()}
+                    </span>
                   </div>
-                  <span className="text-white text-xs font-medium">TikTok</span>
-                </a>
-              )}
-            </div>
+                </div>
+              </div>
 
-            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 text-white text-sm z-20">
-              {index + 1} / {filteredReels.length}
+              <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-20">
+                <button
+                  onClick={() => toggleLike(reel.id)}
+                  className="flex flex-col items-center gap-1 group"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <div className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-all ${
+                    likedVideos.has(reel.id)
+                      ? 'bg-red-500'
+                      : 'bg-white/20 group-hover:bg-red-500'
+                  }`}>
+                    <Heart className={`w-6 h-6 ${likedVideos.has(reel.id) ? 'text-white fill-white' : 'text-white'}`} />
+                  </div>
+                  <span className="text-white text-xs font-medium">
+                    {likeCounts[reel.id] || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => openComments(reel.id)}
+                  className="flex flex-col items-center gap-1 group"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-blue-500 transition-all">
+                    <MessageCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-white text-xs font-medium">
+                    {commentCounts[reel.id] || 0}
+                  </span>
+                </button>
+
+                {reel.tiktok_url && (
+                  <a
+                    href={reel.tiktok_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-1 group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white transition-all">
+                      <ExternalLink className="w-6 h-6 text-white group-hover:text-black" />
+                    </div>
+                    <span className="text-white text-xs font-medium">TikTok</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="absolute top-20 left-1/2 transform -translate-x-1/2 text-white text-sm z-20">
+                {index + 1} / {filteredReels.length}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {showCommentsModal && (
@@ -623,9 +634,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {comments.length === 0 ? (
-                <p className="text-white/60 text-center py-8">
-                  Fii primul care comenteaza!
-                </p>
+                <p className="text-white/60 text-center py-8">Fii primul care comenteaza!</p>
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="bg-white/5 rounded-lg p-3">
@@ -687,13 +696,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       )}
 
       <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </section>
   );
