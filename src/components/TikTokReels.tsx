@@ -48,7 +48,7 @@ function extractYouTubeId(url: string): string {
   return '';
 }
 
-function isLocalVideo(url: string) {
+function isPlayableVideo(url: string) {
   return !url.includes('tiktok.com') && !url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('instagram.com');
 }
 
@@ -56,7 +56,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [reels, setReels] = useState<VideoReel[]>([]);
   const [filteredReels, setFilteredReels] = useState<VideoReel[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
@@ -74,9 +74,11 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const isMutedRef = useRef(true);
-  const activeVideoIdRef = useRef<string | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
+  const currentIndexRef = useRef(0);
+  const filteredReelsRef = useRef<VideoReel[]>([]);
   const sessionId = getSessionId();
+
+  filteredReelsRef.current = filteredReels;
 
   useEffect(() => {
     fetchReels();
@@ -107,9 +109,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }, [reels, showCommentsModal, selectedVideoForComments]);
 
   useEffect(() => {
-    pauseAndResetAll();
-    activeVideoIdRef.current = null;
-    setActiveVideoId(null);
+    pauseAllVideos();
+    currentIndexRef.current = 0;
+    setCurrentIndex(0);
     setIsPaused(false);
 
     if (selectedCategory === 'all') {
@@ -125,94 +127,67 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    const waitForSlides = () => {
-      const slideElements = container.querySelectorAll<HTMLElement>('[data-reel-id]');
-      if (slideElements.length === 0) {
-        requestAnimationFrame(waitForSlides);
-        return;
+    container.scrollTop = 0;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const height = container.clientHeight;
+      const newIndex = Math.round(scrollTop / height);
+      const clampedIndex = Math.max(0, Math.min(newIndex, filteredReelsRef.current.length - 1));
+
+      if (clampedIndex !== currentIndexRef.current) {
+        currentIndexRef.current = clampedIndex;
+        setCurrentIndex(clampedIndex);
+        setIsPaused(false);
+        playVideoAtIndex(clampedIndex);
       }
-
-      const visibilityMap = new Map<string, number>();
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const reelId = entry.target.getAttribute('data-reel-id');
-            if (reelId) {
-              visibilityMap.set(reelId, entry.intersectionRatio);
-            }
-          }
-
-          let mostVisibleId: string | null = null;
-          let highestRatio = 0;
-
-          visibilityMap.forEach((ratio, id) => {
-            if (ratio > highestRatio) {
-              highestRatio = ratio;
-              mostVisibleId = id;
-            }
-          });
-
-          if (!mostVisibleId || highestRatio < 0.5) return;
-          if (mostVisibleId === activeVideoIdRef.current) return;
-
-          activateReel(mostVisibleId);
-        },
-        {
-          root: container,
-          threshold: [0, 0.25, 0.5, 0.75, 1.0],
-        }
-      );
-
-      slideElements.forEach(slide => observer.observe(slide));
-
-      if (!activeVideoIdRef.current) {
-        activateReel(filteredReels[0].id);
-      }
-
-      cleanupRef.current = () => {
-        observer.disconnect();
-        visibilityMap.clear();
-      };
     };
 
-    requestAnimationFrame(waitForSlides);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+
+    const timer = setTimeout(() => {
+      playVideoAtIndex(0);
+    }, 200);
 
     return () => {
-      if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-      }
+      container.removeEventListener('scroll', handleScroll);
+      clearTimeout(timer);
     };
   }, [filteredReels]);
 
-  function activateReel(reelId: string) {
-    pauseAndResetAll();
+  function playVideoAtIndex(index: number) {
+    pauseAllVideos();
 
-    activeVideoIdRef.current = reelId;
-    setActiveVideoId(reelId);
-    setIsPaused(false);
+    const reelsList = filteredReelsRef.current;
+    if (index < 0 || index >= reelsList.length) return;
 
-    const reel = filteredReels.find(r => r.id === reelId);
-    if (reel && isLocalVideo(reel.video_url)) {
-      const video = videoRefs.current.get(reelId);
-      if (video) {
-        playVideoElement(video);
-      }
+    const reel = reelsList[index];
+    if (!reel || !isPlayableVideo(reel.video_url)) return;
+
+    const video = videoRefs.current.get(reel.id);
+    if (!video) return;
+
+    video.currentTime = 0;
+    video.muted = isMutedRef.current;
+
+    if (video.readyState >= 2) {
+      startPlayback(video);
+    } else {
+      const onCanPlay = () => {
+        video.removeEventListener('canplay', onCanPlay);
+        video.removeEventListener('loadeddata', onCanPlay);
+        if (currentIndexRef.current === index) {
+          startPlayback(video);
+        }
+      };
+      video.addEventListener('canplay', onCanPlay);
+      video.addEventListener('loadeddata', onCanPlay);
+      video.load();
     }
   }
 
-  function pauseAndResetAll() {
-    videoRefs.current.forEach((video) => {
-      if (video) {
-        video.pause();
-      }
-    });
-  }
-
-  function tryPlay(video: HTMLVideoElement) {
+  function startPlayback(video: HTMLVideoElement) {
     video.muted = isMutedRef.current;
-    video.currentTime = 0;
     const p = video.play();
     if (p) {
       p.catch(() => {
@@ -224,26 +199,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     }
   }
 
-  function playVideoElement(video: HTMLVideoElement) {
-    if (video.readyState >= 3) {
-      tryPlay(video);
-      return;
-    }
-
-    const onReady = () => {
-      video.removeEventListener('canplay', onReady);
-      video.removeEventListener('loadeddata', onReady);
-      const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
-      if (reelId === activeVideoIdRef.current) {
-        tryPlay(video);
+  function pauseAllVideos() {
+    videoRefs.current.forEach((video) => {
+      if (video && !video.paused) {
+        video.pause();
       }
-    };
-    video.addEventListener('canplay', onReady);
-    video.addEventListener('loadeddata', onReady);
-
-    if (video.readyState === 0) {
-      video.load();
-    }
+    });
   }
 
   const handleToggleMute = useCallback(() => {
@@ -257,9 +218,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }, []);
 
   const handleTogglePlay = useCallback(() => {
-    const currentId = activeVideoIdRef.current;
-    if (!currentId) return;
-    const video = videoRefs.current.get(currentId);
+    const reelsList = filteredReelsRef.current;
+    const idx = currentIndexRef.current;
+    if (idx < 0 || idx >= reelsList.length) return;
+
+    const reel = reelsList[idx];
+    const video = videoRefs.current.get(reel.id);
     if (!video) return;
 
     if (video.paused) {
@@ -517,8 +481,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         style={{ scrollSnapType: 'y mandatory' }}
       >
         {filteredReels.map((reel, index) => {
-          const local = isLocalVideo(reel.video_url);
-          const isActive = reel.id === activeVideoId;
+          const playable = isPlayableVideo(reel.video_url);
+          const isActive = index === currentIndex;
 
           return (
             <div
@@ -586,7 +550,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 />
               )}
 
-              {local && isActive && isPaused && (
+              {playable && isActive && isPaused && (
                 <button
                   onClick={handleTogglePlay}
                   className="absolute inset-0 flex items-center justify-center bg-black/20 transition-all cursor-pointer z-10"
@@ -613,7 +577,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
               </div>
 
               <div className="absolute right-4 bottom-24 flex flex-col gap-5 z-20">
-                {local && (
+                {playable && (
                   <button
                     onClick={handleToggleMute}
                     className="flex flex-col items-center gap-1 group"
