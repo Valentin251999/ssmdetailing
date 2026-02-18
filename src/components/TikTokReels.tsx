@@ -124,56 +124,71 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    const getIndexFromScroll = () => {
+      const containerHeight = container.clientHeight;
+      const scrollTop = container.scrollTop;
+      const raw = scrollTop / containerHeight;
+      return Math.max(0, Math.min(Math.round(raw), filteredReels.length - 1));
+    };
+
+    const switchToIndex = (newIndex: number) => {
+      if (newIndex === currentIndexRef.current) return;
+
+      const prevReel = filteredReels[currentIndexRef.current];
+      if (prevReel && isLocalVideo(prevReel.video_url)) {
+        const prevVideo = videoRefs.current[prevReel.id];
+        if (prevVideo) {
+          prevVideo.pause();
+          prevVideo.currentTime = 0;
+        }
+      }
+
+      currentIndexRef.current = newIndex;
+      setCurrentIndex(newIndex);
+
+      const newReel = filteredReels[newIndex];
+      if (newReel && isLocalVideo(newReel.video_url)) {
+        setPausedVideos(prev => {
+          const next = new Set(prev);
+          next.delete(newReel.id);
+          return next;
+        });
+        playVideoById(newReel.id);
+      }
+    };
+
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let isScrolling = false;
 
     const handleScroll = () => {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        const containerHeight = container.clientHeight;
-        const scrollTop = container.scrollTop;
-        const newIndex = Math.round(scrollTop / containerHeight);
-        const clampedIndex = Math.max(0, Math.min(newIndex, filteredReels.length - 1));
+      isScrolling = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(() => {
+        isScrolling = false;
+        switchToIndex(getIndexFromScroll());
+      }, 200);
+    };
 
-        if (clampedIndex !== currentIndexRef.current) {
-          const prevReel = filteredReels[currentIndexRef.current];
-          if (prevReel && isLocalVideo(prevReel.video_url)) {
-            const prevVideo = videoRefs.current[prevReel.id];
-            if (prevVideo) {
-              prevVideo.pause();
-              prevVideo.currentTime = 0;
-            }
-          }
-
-          currentIndexRef.current = clampedIndex;
-          setCurrentIndex(clampedIndex);
-
-          const newReel = filteredReels[clampedIndex];
-          if (newReel && isLocalVideo(newReel.video_url)) {
-            setPausedVideos(prev => {
-              const next = new Set(prev);
-              next.delete(newReel.id);
-              return next;
-            });
-            playVideoById(newReel.id);
-          }
-        }
-      }, 150);
+    const handleScrollEnd = () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      isScrolling = false;
+      switchToIndex(getIndexFromScroll());
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('scrollend', handleScrollEnd, { passive: true });
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
-      if (scrollTimer) clearTimeout(scrollTimer);
+      container.removeEventListener('scrollend', handleScrollEnd);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, [filteredReels]);
 
+  const firstVideoReady = useRef(false);
+
   useEffect(() => {
-    if (filteredReels.length === 0) return;
-    const firstReel = filteredReels[0];
-    if (firstReel && isLocalVideo(firstReel.video_url)) {
-      playVideoById(firstReel.id);
-    }
+    firstVideoReady.current = false;
   }, [filteredReels]);
 
   function stopAllVideos() {
@@ -188,13 +203,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
   function playVideoById(videoId: string) {
     const video = videoRefs.current[videoId];
-    if (!video) {
-      setTimeout(() => {
-        const v = videoRefs.current[videoId];
-        if (v) attemptPlay(v);
-      }, 300);
-      return;
-    }
+    if (!video) return;
     attemptPlay(video);
   }
 
@@ -537,6 +546,10 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                     if (el) {
                       videoRefs.current[reel.id] = el;
                       el.muted = isMutedRef.current;
+                      if (index === 0 && !firstVideoReady.current) {
+                        firstVideoReady.current = true;
+                        attemptPlay(el);
+                      }
                     }
                   }}
                   src={reel.video_url}
