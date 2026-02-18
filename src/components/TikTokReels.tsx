@@ -122,48 +122,55 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }, [category, allReels]);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const setupObserverRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    if (reels.length === 0) return;
-    const container = containerRef.current;
-    if (!container) return;
+    setupObserverRef.current = () => {
+      const container = containerRef.current;
+      if (!container || reels.length === 0) return;
 
-    container.scrollTop = 0;
+      container.scrollTop = 0;
 
-    observerRef.current?.disconnect();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        let best: { idx: number; ratio: number } | null = null;
-        entries.forEach(entry => {
-          const idx = Number((entry.target as HTMLElement).dataset.idx);
-          if (!isNaN(idx) && entry.isIntersecting) {
-            if (!best || entry.intersectionRatio > best.ratio) {
-              best = { idx, ratio: entry.intersectionRatio };
+      observerRef.current?.disconnect();
+      const observer = new IntersectionObserver(
+        (entries) => {
+          let best: { idx: number; ratio: number } | null = null;
+          entries.forEach(entry => {
+            const idx = Number((entry.target as HTMLElement).dataset.idx);
+            if (!isNaN(idx) && entry.isIntersecting) {
+              if (!best || entry.intersectionRatio > best.ratio) {
+                best = { idx, ratio: entry.intersectionRatio };
+              }
             }
+          });
+          if (best && (best as { idx: number; ratio: number }).ratio >= 0.5) {
+            const newIdx = (best as { idx: number; ratio: number }).idx;
+            if (newIdx !== activeIdxRef.current) {
+              stopAll();
+              activeIdxRef.current = newIdx;
+              setActiveIdx(newIdx);
+              setIsPaused(false);
+            }
+            tryPlay(newIdx);
           }
-        });
-        if (best && (best as { idx: number; ratio: number }).ratio >= 0.5) {
-          const newIdx = (best as { idx: number; ratio: number }).idx;
-          if (newIdx !== activeIdxRef.current) {
-            stopAll();
-            activeIdxRef.current = newIdx;
-            setActiveIdx(newIdx);
-            setIsPaused(false);
-          }
-          tryPlay(newIdx);
-        }
-      },
-      { root: container, threshold: [0.5, 0.8, 1.0] }
-    );
-    observerRef.current = observer;
+        },
+        { root: container, threshold: [0.5, 0.8, 1.0] }
+      );
+      observerRef.current = observer;
 
-    const slides = container.querySelectorAll('[data-idx]');
-    slides.forEach(s => observer.observe(s));
-
-    return () => {
-      observer.disconnect();
+      const slides = container.querySelectorAll('[data-idx]');
+      slides.forEach(s => observer.observe(s));
     };
-  }, [reels]);
+  });
+
+  useEffect(() => {
+    if (reels.length === 0 || isLoading) return;
+    const timer = setTimeout(() => {
+      setupObserverRef.current();
+      tryPlay(0);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [reels, isLoading]);
 
   function stopAll() {
     Object.values(videoRefs.current).forEach(v => {
