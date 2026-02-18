@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import {
   Save, Settings, Home, Info, Briefcase,
-  Image, Folder, MessageSquare, HelpCircle,
-  Phone, Upload, Trash2, Plus, Edit2, X, Video, LogOut
+  Folder, MessageSquare, HelpCircle,
+  Phone, Trash2, Plus, Edit2, X, Video, LogOut
 } from 'lucide-react';
 import ReelsAdmin from './ReelsAdmin';
 import { useAuth } from '../contexts/AuthContext';
 
-type Tab = 'hero' | 'about' | 'services' | 'gallery' | 'portfolio' | 'reels' | 'reviews' | 'faq' | 'contact';
+type Tab = 'hero' | 'about' | 'services' | 'portfolio' | 'reels' | 'reviews' | 'faq' | 'contact';
 
 interface SiteSettings {
   id: string;
@@ -39,15 +39,6 @@ interface Service {
   title: string;
   description: string;
   icon_name: string;
-  display_order: number;
-  is_active: boolean;
-}
-
-interface GalleryImage {
-  id: string;
-  image_url: string;
-  title: string;
-  category: string;
   display_order: number;
   is_active: boolean;
 }
@@ -85,7 +76,6 @@ export default function ComprehensiveAdmin() {
   const [activeTab, setActiveTab] = useState<Tab>('hero');
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [services, setServices] = useState<Service[]>([]);
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
@@ -101,10 +91,9 @@ export default function ComprehensiveAdmin() {
     try {
       setLoading(true);
 
-      const [settingsRes, servicesRes, galleryRes, portfolioRes, reviewsRes, faqRes] = await Promise.all([
+      const [settingsRes, servicesRes, portfolioRes, reviewsRes, faqRes] = await Promise.all([
         supabase.from('site_settings').select('*').maybeSingle(),
         supabase.from('services').select('*').order('display_order'),
-        supabase.from('gallery_images').select('*').order('display_order'),
         supabase.from('portfolio_items').select('*').order('display_order'),
         supabase.from('public_reviews').select('*').order('created_at', { ascending: false }),
         supabase.from('faq_items').select('*').order('display_order')
@@ -112,7 +101,6 @@ export default function ComprehensiveAdmin() {
 
       if (settingsRes.data) setSettings(settingsRes.data);
       if (servicesRes.data) setServices(servicesRes.data);
-      if (galleryRes.data) setGalleryImages(galleryRes.data);
       if (portfolioRes.data) setPortfolioItems(portfolioRes.data);
       if (reviewsRes.data) setPublicReviews(reviewsRes.data);
       if (faqRes.data) setFaqItems(faqRes.data);
@@ -218,59 +206,6 @@ export default function ComprehensiveAdmin() {
     }
   };
 
-  const uploadGalleryImage = async (file: File) => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('gallery-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('gallery-images')
-        .getPublicUrl(filePath);
-
-      const title = prompt('Titlu pentru imagine:') || 'Imagine galerie';
-
-      const { error: insertError } = await supabase
-        .from('gallery_images')
-        .insert([{
-          image_url: publicUrl,
-          title,
-          category: 'General',
-          display_order: galleryImages.length
-        }]);
-
-      if (insertError) throw insertError;
-      await loadData();
-      showMessage('Imaginea a fost încărcată!');
-    } catch (error) {
-      void error;
-      showMessage('Eroare la încărcarea imaginii');
-    }
-  };
-
-  const deleteGalleryImage = async (id: string, imageUrl: string) => {
-    if (!confirm('Sigur vrei să ștergi această imagine?')) return;
-    try {
-      const path = imageUrl.split('/').pop();
-      if (path) {
-        await supabase.storage.from('gallery-images').remove([path]);
-      }
-      const { error } = await supabase.from('gallery_images').delete().eq('id', id);
-      if (error) throw error;
-      await loadData();
-      showMessage('Imaginea a fost ștearsă!');
-    } catch (error) {
-      void error;
-      showMessage('Eroare la ștergerea imaginii');
-    }
-  };
-
   const saveFAQ = async (faq: Partial<FAQItem>) => {
     try {
       if (faq.id) {
@@ -353,7 +288,6 @@ export default function ComprehensiveAdmin() {
     { id: 'hero' as Tab, label: 'Hero', icon: Home },
     { id: 'about' as Tab, label: 'Despre', icon: Info },
     { id: 'services' as Tab, label: 'Servicii', icon: Briefcase },
-    { id: 'gallery' as Tab, label: 'Galerie', icon: Image },
     { id: 'portfolio' as Tab, label: 'Portfolio', icon: Folder },
     { id: 'reels' as Tab, label: 'Video Reels', icon: Video },
     { id: 'reviews' as Tab, label: 'Recenzii Publice', icon: MessageSquare },
@@ -687,53 +621,6 @@ export default function ComprehensiveAdmin() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'gallery' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Galerie Foto</h2>
-                <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer">
-                  <Upload className="w-4 h-4" />
-                  Încarcă Imagine
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadGalleryImage(file);
-                    }}
-                  />
-                </label>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {galleryImages.map((image) => (
-                  <div key={image.id} className="relative group">
-                    <img
-                      src={image.image_url}
-                      alt={image.title}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => deleteGalleryImage(image.id, image.image_url)}
-                        className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-sm font-medium text-gray-900">{image.title}</p>
-                      <p className="text-xs text-gray-500">{image.category}</p>
                     </div>
                   </div>
                 ))}
