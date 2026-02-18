@@ -1,6 +1,6 @@
 import { Phone, MessageCircle } from 'lucide-react';
 import { useSiteData } from '../contexts/SiteDataContext';
-import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
+import { formatPhoneForWhatsApp, formatPhoneForTel } from '../utils/phoneFormatter';
 
 export default function Hero() {
   const { settings } = useSiteData();
@@ -36,7 +36,7 @@ export default function Hero() {
               {settings.hero_cta_secondary}
             </a>
             <a
-              href={`tel:${settings.whatsapp_number}`}
+              href={`tel:${formatPhoneForTel(settings.whatsapp_number)}`}
               className="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg flex items-center justify-center gap-3 shadow-lg shadow-amber-600/20"
             >
               <Phone size={24} />

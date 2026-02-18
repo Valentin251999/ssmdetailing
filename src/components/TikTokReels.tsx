@@ -595,7 +595,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 <div key={c.id} className="bg-white/5 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-sm font-bold">
-                      {c.author_name[0].toUpperCase()}
+                      {(c.author_name?.[0] || 'A').toUpperCase()}
                     </div>
                     <div>
                       <p className="text-white text-sm font-medium">{c.author_name}</p>
