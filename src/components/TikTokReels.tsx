@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, ExternalLink, Play, Volume2, VolumeX, Filter, ArrowLeft, X, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -27,21 +27,6 @@ interface TikTokReelsProps {
   onNavigateToHome?: () => void;
 }
 
-function BackButton({ onClick }: { onClick?: () => void }) {
-  if (onClick) {
-    return (
-      <button
-        onClick={onClick}
-        className="fixed top-20 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-3 hover:bg-black/90 transition-all group shadow-lg"
-        aria-label="Înapoi la pagina principală"
-      >
-        <ArrowLeft className="w-6 h-6 text-white group-hover:text-amber-400 transition-colors" />
-      </button>
-    );
-  }
-  return null;
-}
-
 function getSessionId() {
   let sessionId = localStorage.getItem('reels_session_id');
   if (!sessionId) {
@@ -51,22 +36,26 @@ function getSessionId() {
   return sessionId;
 }
 
-function extractTikTokId(url: string): string {
-  const match = url.match(/\/video\/(\d+)/);
-  return match ? match[1] : '';
-}
-
 function extractYouTubeId(url: string): string {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
     /youtube\.com\/embed\/([^&\n?#]+)/
   ];
-
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) return match[1];
   }
   return '';
+}
+
+function stopAllVideos(videoRefs: React.MutableRefObject<{ [key: string]: HTMLVideoElement }>) {
+  Object.values(videoRefs.current).forEach(video => {
+    if (video) {
+      video.pause();
+      video.muted = true;
+      video.currentTime = 0;
+    }
+  });
 }
 
 export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
@@ -75,8 +64,8 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [playingVideos, setPlayingVideos] = useState<Set<string>>(new Set());
-  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
   const [commentCounts, setCommentCounts] = useState<{ [key: string]: number }>({});
@@ -88,6 +77,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
   const sessionId = getSessionId();
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchReels();
@@ -95,13 +85,76 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }, []);
 
   useEffect(() => {
+    stopAllVideos(videoRefs);
+    setIsPlaying(false);
+    setIsMuted(false);
+    setCurrentIndex(0);
+
     if (selectedCategory === 'all') {
       setFilteredReels(reels);
     } else {
       setFilteredReels(reels.filter(reel => reel.category === selectedCategory));
     }
-    setCurrentIndex(0);
   }, [selectedCategory, reels]);
+
+  const playCurrentVideo = useCallback((index: number, reelsList: VideoReel[]) => {
+    stopAllVideos(videoRefs);
+
+    const reel = reelsList[index];
+    if (!reel) return;
+
+    const video = videoRefs.current[reel.id];
+    if (!video) return;
+
+    video.muted = false;
+    video.currentTime = 0;
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+    setIsPlaying(true);
+    setIsMuted(false);
+  }, []);
+
+  useEffect(() => {
+    if (filteredReels.length === 0) return;
+
+    stopAllVideos(videoRefs);
+    setIsPlaying(false);
+
+    const reel = filteredReels[0];
+    if (!reel) return;
+
+    const tryPlay = () => {
+      const video = videoRefs.current[reel.id];
+      if (!video) return;
+      video.muted = false;
+      video.play().catch(() => {
+        video.muted = true;
+        video.play().catch(() => {});
+      });
+      setIsPlaying(true);
+      setIsMuted(false);
+    };
+
+    const interval = setInterval(() => {
+      const video = videoRefs.current[reel.id];
+      if (video && video.readyState >= 3) {
+        clearInterval(interval);
+        tryPlay();
+      }
+    }, 100);
+
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      tryPlay();
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [filteredReels]);
 
   const fetchReels = async () => {
     try {
@@ -114,9 +167,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
       if (error) throw error;
 
-      // Randomize the order for a TikTok-like experience
       const shuffled = data ? [...data].sort(() => Math.random() - 0.5) : [];
-
       setReels(shuffled);
       setFilteredReels(shuffled);
 
@@ -148,30 +199,19 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const fetchLikeAndCommentCounts = async (videoIds: string[]) => {
     try {
       const [likesData, commentsData] = await Promise.all([
-        supabase
-          .from('video_reel_likes')
-          .select('video_reel_id')
-          .in('video_reel_id', videoIds),
-        supabase
-          .from('video_reel_comments')
-          .select('video_reel_id')
-          .in('video_reel_id', videoIds)
+        supabase.from('video_reel_likes').select('video_reel_id').in('video_reel_id', videoIds),
+        supabase.from('video_reel_comments').select('video_reel_id').in('video_reel_id', videoIds)
       ]);
 
       const likesMap: { [key: string]: number } = {};
       const commentsMap: { [key: string]: number } = {};
-
-      videoIds.forEach(id => {
-        likesMap[id] = 0;
-        commentsMap[id] = 0;
-      });
+      videoIds.forEach(id => { likesMap[id] = 0; commentsMap[id] = 0; });
 
       if (likesData.data) {
         likesData.data.forEach(like => {
           likesMap[like.video_reel_id] = (likesMap[like.video_reel_id] || 0) + 1;
         });
       }
-
       if (commentsData.data) {
         commentsData.data.forEach(comment => {
           commentsMap[comment.video_reel_id] = (commentsMap[comment.video_reel_id] || 0) + 1;
@@ -238,7 +278,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
   const submitComment = async () => {
     if (!newComment.trim() || !selectedVideoForComments) return;
-
     const name = authorName.trim() || 'Anonim';
 
     try {
@@ -267,115 +306,51 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const handleScroll = () => {
     if (!containerRef.current) return;
 
-    const container = containerRef.current;
-    const scrollTop = container.scrollTop;
-    const windowHeight = window.innerHeight;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
 
-    let newIndex = Math.round(scrollTop / windowHeight);
-    newIndex = Math.max(0, Math.min(newIndex, filteredReels.length - 1));
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!containerRef.current) return;
+      const scrollTop = containerRef.current.scrollTop;
+      const windowHeight = window.innerHeight;
+      let newIndex = Math.round(scrollTop / windowHeight);
+      newIndex = Math.max(0, Math.min(newIndex, filteredReels.length - 1));
 
-    if (newIndex !== currentIndex && filteredReels[newIndex]) {
-      setCurrentIndex(newIndex);
-
-      Object.keys(videoRefs.current).forEach(id => {
-        const video = videoRefs.current[id];
-        if (video) {
-          video.pause();
-          video.muted = true;
-          video.currentTime = 0;
-        }
-      });
-
-      const currentReel = filteredReels[newIndex];
-      const currentVideo = videoRefs.current[currentReel.id];
-
-      if (currentVideo && currentReel) {
-        currentVideo.muted = false;
-        currentVideo.play().catch((error) => {
-          void error;
-          currentVideo.muted = true;
-          currentVideo.play().catch(() => {});
-        });
-        setPlayingVideos(new Set([currentReel.id]));
-        setMutedVideos(new Set());
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+        playCurrentVideo(newIndex, filteredReels);
       }
-    }
+    }, 150);
   };
 
-  useEffect(() => {
-    if (filteredReels.length > 0 && filteredReels[0]) {
-      const attemptPlay = () => {
-        const firstVideo = videoRefs.current[filteredReels[0].id];
-        if (firstVideo) {
-          firstVideo.muted = false;
-          firstVideo.play().catch((error) => {
-            void error;
-            firstVideo.muted = true;
-            firstVideo.play().catch(() => {});
-          });
-          setPlayingVideos(new Set([filteredReels[0].id]));
-          setMutedVideos(new Set());
-        }
-      };
+  const currentReel = filteredReels[currentIndex];
 
-      const checkAndPlay = setInterval(() => {
-        const firstVideo = videoRefs.current[filteredReels[0].id];
-        if (firstVideo && firstVideo.readyState >= 3) {
-          attemptPlay();
-          clearInterval(checkAndPlay);
-        }
-      }, 50);
-
-      setTimeout(() => clearInterval(checkAndPlay), 3000);
-
-      attemptPlay();
-    }
-  }, [filteredReels]);
-
-  const togglePlay = (id: string) => {
-    const video = videoRefs.current[id];
+  const togglePlay = () => {
+    if (!currentReel) return;
+    const video = videoRefs.current[currentReel.id];
     if (!video) return;
 
-    const newPlayingVideos = new Set(playingVideos);
-
-    if (playingVideos.has(id)) {
+    if (isPlaying) {
       video.pause();
-      newPlayingVideos.delete(id);
+      setIsPlaying(false);
     } else {
-      video.play();
-      newPlayingVideos.add(id);
+      video.play().catch(() => {});
+      setIsPlaying(true);
     }
-
-    setPlayingVideos(newPlayingVideos);
   };
 
-  const toggleMute = (id: string) => {
-    const video = videoRefs.current[id];
+  const toggleMute = () => {
+    if (!currentReel) return;
+    const video = videoRefs.current[currentReel.id];
     if (!video) return;
 
-    const newMutedVideos = new Set(mutedVideos);
-
-    if (mutedVideos.has(id)) {
-      video.muted = false;
-      newMutedVideos.delete(id);
-    } else {
-      video.muted = true;
-      newMutedVideos.add(id);
-    }
-
-    setMutedVideos(newMutedVideos);
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
   };
 
-  const handleVideoClick = (id: string) => {
-    const video = videoRefs.current[id];
-    if (!video) return;
-
-    if (!playingVideos.has(id)) {
-      video.play();
-      setPlayingVideos(new Set(playingVideos).add(id));
-    } else {
-      togglePlay(id);
-    }
+  const handleVideoClick = () => {
+    togglePlay();
   };
 
   const categories = [
@@ -425,7 +400,16 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         </div>
       </div>
 
-      <BackButton onClick={onNavigateToHome} />
+      {onNavigateToHome && (
+        <button
+          onClick={onNavigateToHome}
+          className="fixed bottom-8 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-full p-4 hover:bg-black/90 transition-all group shadow-lg active:scale-95"
+          aria-label="Înapoi la pagina principală"
+          style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+        >
+          <ArrowLeft className="w-7 h-7 text-white group-hover:text-amber-400 transition-colors" />
+        </button>
+      )}
 
       <div
         ref={containerRef}
@@ -486,35 +470,27 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 poster={reel.thumbnail_url}
                 loop
                 playsInline
-                preload="auto"
+                preload={index === 0 ? 'auto' : 'none'}
+                muted
                 webkit-playsinline="true"
                 x5-playsinline="true"
-                onClick={() => handleVideoClick(reel.id)}
-                onLoadedData={(e) => {
-                  if (index === currentIndex) {
-                    const video = e.currentTarget;
-                    video.muted = false;
-                    video.play().catch(() => {
-                      video.muted = true;
-                      video.play().catch(() => {});
-                    });
-                  }
-                }}
+                onClick={index === currentIndex ? handleVideoClick : undefined}
                 onEnded={(e) => {
                   const video = e.currentTarget;
                   video.currentTime = 0;
                   video.play().catch(() => {});
                 }}
-                onStalled={(e) => {
-                  e.currentTarget.load();
-                }}
                 className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
               />
             )}
 
-            {!reel.video_url.includes('tiktok.com') && !reel.video_url.includes('youtube.com') && !reel.video_url.includes('instagram.com') && !playingVideos.has(reel.id) && (
+            {!reel.video_url.includes('tiktok.com') &&
+             !reel.video_url.includes('youtube.com') &&
+             !reel.video_url.includes('instagram.com') &&
+             index === currentIndex &&
+             !isPlaying && (
               <button
-                onClick={() => togglePlay(reel.id)}
+                onClick={togglePlay}
                 className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-all cursor-pointer z-10"
               >
                 <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center hover:scale-110 transition-transform">
@@ -529,7 +505,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 {reel.description && (
                   <p className="text-white/90 text-sm mb-4">{reel.description}</p>
                 )}
-
                 <div className="flex items-center gap-3">
                   <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
                     {reel.category.toUpperCase()}
@@ -539,18 +514,20 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
             </div>
 
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-20">
-              <button
-                onClick={() => toggleMute(reel.id)}
-                className="flex flex-col items-center gap-1 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all">
-                  {mutedVideos.has(reel.id) ? (
-                    <VolumeX className="w-6 h-6 text-white" />
-                  ) : (
-                    <Volume2 className="w-6 h-6 text-white" />
-                  )}
-                </div>
-              </button>
+              {index === currentIndex && !reel.video_url.includes('tiktok.com') && !reel.video_url.includes('youtube.com') && !reel.video_url.includes('instagram.com') && (
+                <button
+                  onClick={toggleMute}
+                  className="flex flex-col items-center gap-1 group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all">
+                    {isMuted ? (
+                      <VolumeX className="w-6 h-6 text-white" />
+                    ) : (
+                      <Volume2 className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                </button>
+              )}
 
               <button
                 onClick={() => toggleLike(reel.id)}
@@ -597,7 +574,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
               )}
             </div>
 
-            <div className="absolute top-40 left-1/2 transform -translate-x-1/2 text-white text-sm z-20">
+            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 text-white text-sm z-20">
               {index + 1} / {filteredReels.length}
             </div>
           </div>
