@@ -192,40 +192,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     videoRefs.current.forEach((video) => {
       if (video) {
         video.pause();
-        video.removeAttribute('data-pending-play');
-        video.currentTime = 0;
       }
     });
   }
 
-  function playVideoElement(video: HTMLVideoElement) {
+  function tryPlay(video: HTMLVideoElement) {
     video.muted = isMutedRef.current;
-
-    if (video.readyState >= 2) {
-      const p = video.play();
-      if (p) {
-        p.catch(() => {
-          video.muted = true;
-          isMutedRef.current = true;
-          setIsMuted(true);
-          video.play().catch(() => {});
-        });
-      }
-    } else {
-      video.setAttribute('data-pending-play', 'true');
-      video.load();
-    }
-  }
-
-  const handleCanPlay = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const video = e.currentTarget;
-    if (video.getAttribute('data-pending-play') !== 'true') return;
-    video.removeAttribute('data-pending-play');
-
-    const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
-    if (reelId !== activeVideoIdRef.current) return;
-
-    video.muted = isMutedRef.current;
+    video.currentTime = 0;
     const p = video.play();
     if (p) {
       p.catch(() => {
@@ -235,7 +208,22 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         video.play().catch(() => {});
       });
     }
-  }, []);
+  }
+
+  function playVideoElement(video: HTMLVideoElement) {
+    if (video.readyState >= 2) {
+      tryPlay(video);
+    } else {
+      const onReady = () => {
+        video.removeEventListener('canplay', onReady);
+        const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
+        if (reelId === activeVideoIdRef.current) {
+          tryPlay(video);
+        }
+      };
+      video.addEventListener('canplay', onReady);
+    }
+  }
 
   const handleToggleMute = useCallback(() => {
     const newMuted = !isMutedRef.current;
@@ -564,7 +552,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   muted
                   preload={index <= 2 ? 'auto' : 'metadata'}
                   onClick={handleTogglePlay}
-                  onCanPlay={handleCanPlay}
                   className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 />
