@@ -129,28 +129,39 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
     container.scrollTop = 0;
 
-    const handleScroll = () => {
-      const scrollTop = container.scrollTop;
-      const height = container.clientHeight;
-      const newIndex = Math.round(scrollTop / height);
-      const clampedIndex = Math.max(0, Math.min(newIndex, filteredReelsRef.current.length - 1));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            const reelId = entry.target.getAttribute('data-reel-id');
+            if (!reelId) continue;
 
-      if (clampedIndex !== currentIndexRef.current) {
-        currentIndexRef.current = clampedIndex;
-        setCurrentIndex(clampedIndex);
-        setIsPaused(false);
-        playVideoAtIndex(clampedIndex);
+            const reelsList = filteredReelsRef.current;
+            const idx = reelsList.findIndex(r => r.id === reelId);
+            if (idx === -1 || idx === currentIndexRef.current) continue;
+
+            currentIndexRef.current = idx;
+            setCurrentIndex(idx);
+            setIsPaused(false);
+            playVideoAtIndex(idx);
+          }
+        }
+      },
+      {
+        root: container,
+        threshold: [0.6],
       }
-    };
+    );
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    const slides = container.querySelectorAll<HTMLElement>('[data-reel-id]');
+    slides.forEach(slide => observer.observe(slide));
 
     const timer = setTimeout(() => {
       playVideoAtIndex(0);
-    }, 200);
+    }, 300);
 
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
       clearTimeout(timer);
     };
   }, [filteredReels]);
@@ -168,7 +179,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     if (!video) return;
 
     video.currentTime = 0;
-    video.muted = isMutedRef.current;
 
     if (video.readyState >= 2) {
       startPlayback(video);
@@ -187,15 +197,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }
 
   function startPlayback(video: HTMLVideoElement) {
-    video.muted = isMutedRef.current;
+    video.muted = true;
     const p = video.play();
     if (p) {
-      p.catch(() => {
-        video.muted = true;
-        isMutedRef.current = true;
-        setIsMuted(true);
-        video.play().catch(() => {});
-      });
+      p.then(() => {
+        video.muted = isMutedRef.current;
+      }).catch(() => {});
     }
   }
 
