@@ -106,9 +106,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }, [reels, showCommentsModal, selectedVideoForComments]);
 
   useEffect(() => {
-    stopAllVideos();
-    setActiveVideoId(null);
+    pauseAndResetAll();
     activeVideoIdRef.current = null;
+    setActiveVideoId(null);
     setIsPaused(false);
 
     if (selectedCategory === 'all') {
@@ -121,103 +121,121 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   useEffect(() => {
     if (filteredReels.length === 0) return;
 
+    const container = containerRef.current;
+    if (!container) return;
+
+    const slideElements = container.querySelectorAll<HTMLElement>('[data-reel-id]');
+    if (slideElements.length === 0) return;
+
+    const visibilityMap = new Map<string, number>();
+
     const observer = new IntersectionObserver(
       (entries) => {
-        let bestEntry: IntersectionObserverEntry | null = null;
-        let bestRatio = 0;
-
         for (const entry of entries) {
-          if (entry.intersectionRatio > bestRatio) {
-            bestRatio = entry.intersectionRatio;
-            bestEntry = entry;
+          const reelId = entry.target.getAttribute('data-reel-id');
+          if (reelId) {
+            visibilityMap.set(reelId, entry.intersectionRatio);
           }
         }
 
-        if (!bestEntry || bestRatio < 0.6) return;
+        let mostVisibleId: string | null = null;
+        let highestRatio = 0;
 
-        const reelId = bestEntry.target.getAttribute('data-reel-id');
-        if (!reelId || reelId === activeVideoIdRef.current) return;
-
-        stopAllVideos();
-
-        activeVideoIdRef.current = reelId;
-        setActiveVideoId(reelId);
-        setIsPaused(false);
-
-        const reel = filteredReels.find(r => r.id === reelId);
-        if (reel && isLocalVideo(reel.video_url)) {
-          const video = videoRefs.current.get(reelId);
-          if (video) {
-            startVideo(video);
+        visibilityMap.forEach((ratio, id) => {
+          if (ratio > highestRatio) {
+            highestRatio = ratio;
+            mostVisibleId = id;
           }
-        }
+        });
+
+        if (!mostVisibleId || highestRatio < 0.5) return;
+        if (mostVisibleId === activeVideoIdRef.current) return;
+
+        activateReel(mostVisibleId);
       },
       {
-        root: containerRef.current,
-        threshold: [0, 0.25, 0.5, 0.6, 0.75, 1.0],
+        root: null,
+        threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
       }
     );
 
-    const container = containerRef.current;
-    if (container) {
-      const slides = container.querySelectorAll('[data-reel-id]');
-      slides.forEach(slide => observer.observe(slide));
+    slideElements.forEach(slide => observer.observe(slide));
+
+    const firstReelId = filteredReels[0].id;
+    if (!activeVideoIdRef.current) {
+      setTimeout(() => activateReel(firstReelId), 100);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      visibilityMap.clear();
+    };
   }, [filteredReels]);
 
-  useEffect(() => {
-    if (filteredReels.length > 0 && !activeVideoIdRef.current) {
-      const firstReel = filteredReels[0];
-      activeVideoIdRef.current = firstReel.id;
-      setActiveVideoId(firstReel.id);
+  function activateReel(reelId: string) {
+    pauseAndResetAll();
 
-      if (isLocalVideo(firstReel.video_url)) {
-        requestAnimationFrame(() => {
-          const video = videoRefs.current.get(firstReel.id);
-          if (video) startVideo(video);
-        });
+    activeVideoIdRef.current = reelId;
+    setActiveVideoId(reelId);
+    setIsPaused(false);
+
+    const reel = filteredReels.find(r => r.id === reelId);
+    if (reel && isLocalVideo(reel.video_url)) {
+      const video = videoRefs.current.get(reelId);
+      if (video) {
+        playVideoElement(video);
       }
     }
-  }, [filteredReels]);
+  }
 
-  function stopAllVideos() {
+  function pauseAndResetAll() {
     videoRefs.current.forEach((video) => {
       if (video) {
         video.pause();
+        video.removeAttribute('data-pending-play');
         video.currentTime = 0;
       }
     });
   }
 
-  function startVideo(video: HTMLVideoElement) {
+  function playVideoElement(video: HTMLVideoElement) {
     video.muted = isMutedRef.current;
-    video.currentTime = 0;
 
-    const doPlay = () => {
-      const promise = video.play();
-      if (promise !== undefined) {
-        promise.catch(() => {
+    if (video.readyState >= 2) {
+      const p = video.play();
+      if (p) {
+        p.catch(() => {
           video.muted = true;
           isMutedRef.current = true;
           setIsMuted(true);
           video.play().catch(() => {});
         });
       }
-    };
-
-    if (video.readyState >= 3) {
-      doPlay();
     } else {
-      const onCanPlay = () => {
-        doPlay();
-        video.removeEventListener('canplaythrough', onCanPlay);
-      };
-      video.addEventListener('canplaythrough', onCanPlay);
+      video.setAttribute('data-pending-play', 'true');
       video.load();
     }
   }
+
+  const handleCanPlay = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.getAttribute('data-pending-play') !== 'true') return;
+    video.removeAttribute('data-pending-play');
+
+    const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
+    if (reelId !== activeVideoIdRef.current) return;
+
+    video.muted = isMutedRef.current;
+    const p = video.play();
+    if (p) {
+      p.catch(() => {
+        video.muted = true;
+        isMutedRef.current = true;
+        setIsMuted(true);
+        video.play().catch(() => {});
+      });
+    }
+  }, []);
 
   const handleToggleMute = useCallback(() => {
     const newMuted = !isMutedRef.current;
@@ -236,7 +254,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     if (!video) return;
 
     if (video.paused) {
-      startVideo(video);
+      video.muted = isMutedRef.current;
+      const p = video.play();
+      if (p) p.catch(() => {});
       setIsPaused(false);
     } else {
       video.pause();
@@ -247,7 +267,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const handleVideoRef = useCallback((el: HTMLVideoElement | null, reelId: string) => {
     if (el) {
       videoRefs.current.set(reelId, el);
-      el.muted = isMutedRef.current;
     } else {
       videoRefs.current.delete(reelId);
     }
@@ -400,8 +419,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     { value: 'funny', label: 'Amuzante' }
   ];
 
-  const activeIndex = filteredReels.findIndex(r => r.id === activeVideoId);
-
   if (isLoading) {
     return (
       <section id="reels" className="min-h-screen bg-black flex items-center justify-center">
@@ -545,8 +562,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   loop
                   playsInline
                   muted
-                  preload={index <= 1 ? 'auto' : 'metadata'}
+                  preload={index <= 2 ? 'auto' : 'metadata'}
                   onClick={handleTogglePlay}
+                  onCanPlay={handleCanPlay}
                   className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 />
