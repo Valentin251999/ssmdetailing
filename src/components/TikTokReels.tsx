@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, ExternalLink, Play, Volume2, VolumeX, Filter, ArrowLeft, X, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -56,7 +56,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [reels, setReels] = useState<VideoReel[]>([]);
   const [filteredReels, setFilteredReels] = useState<VideoReel[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
@@ -71,10 +71,10 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const [newComment, setNewComment] = useState('');
   const [authorName, setAuthorName] = useState('');
 
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentIndexRef = useRef(0);
   const isMutedRef = useRef(true);
+  const activeVideoIdRef = useRef<string | null>(null);
   const sessionId = getSessionId();
 
   useEffect(() => {
@@ -107,9 +107,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
 
   useEffect(() => {
     stopAllVideos();
-    setCurrentIndex(0);
+    setActiveVideoId(null);
+    activeVideoIdRef.current = null;
     setIsPaused(false);
-    currentIndexRef.current = 0;
 
     if (selectedCategory === 'all') {
       setFilteredReels(reels);
@@ -121,67 +121,69 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   useEffect(() => {
     if (filteredReels.length === 0) return;
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let bestEntry: IntersectionObserverEntry | null = null;
+        let bestRatio = 0;
+
+        for (const entry of entries) {
+          if (entry.intersectionRatio > bestRatio) {
+            bestRatio = entry.intersectionRatio;
+            bestEntry = entry;
+          }
+        }
+
+        if (!bestEntry || bestRatio < 0.6) return;
+
+        const reelId = bestEntry.target.getAttribute('data-reel-id');
+        if (!reelId || reelId === activeVideoIdRef.current) return;
+
+        stopAllVideos();
+
+        activeVideoIdRef.current = reelId;
+        setActiveVideoId(reelId);
+        setIsPaused(false);
+
+        const reel = filteredReels.find(r => r.id === reelId);
+        if (reel && isLocalVideo(reel.video_url)) {
+          const video = videoRefs.current.get(reelId);
+          if (video) {
+            startVideo(video);
+          }
+        }
+      },
+      {
+        root: containerRef.current,
+        threshold: [0, 0.25, 0.5, 0.6, 0.75, 1.0],
+      }
+    );
+
     const container = containerRef.current;
-    if (!container) return;
+    if (container) {
+      const slides = container.querySelectorAll('[data-reel-id]');
+      slides.forEach(slide => observer.observe(slide));
+    }
 
-    const getIndexFromScroll = () => {
-      const containerHeight = container.clientHeight;
-      const scrollTop = container.scrollTop;
-      const raw = scrollTop / containerHeight;
-      return Math.max(0, Math.min(Math.round(raw), filteredReels.length - 1));
-    };
+    return () => observer.disconnect();
+  }, [filteredReels]);
 
-    const activateIndex = (newIndex: number) => {
-      if (newIndex === currentIndexRef.current) return;
+  useEffect(() => {
+    if (filteredReels.length > 0 && !activeVideoIdRef.current) {
+      const firstReel = filteredReels[0];
+      activeVideoIdRef.current = firstReel.id;
+      setActiveVideoId(firstReel.id);
 
-      const prevReel = filteredReels[currentIndexRef.current];
-      if (prevReel && isLocalVideo(prevReel.video_url)) {
-        const prevVideo = videoRefs.current[prevReel.id];
-        if (prevVideo) {
-          prevVideo.pause();
-          prevVideo.currentTime = 0;
-        }
+      if (isLocalVideo(firstReel.video_url)) {
+        requestAnimationFrame(() => {
+          const video = videoRefs.current.get(firstReel.id);
+          if (video) startVideo(video);
+        });
       }
-
-      currentIndexRef.current = newIndex;
-      setCurrentIndex(newIndex);
-      setIsPaused(false);
-
-      const newReel = filteredReels[newIndex];
-      if (newReel && isLocalVideo(newReel.video_url)) {
-        const video = videoRefs.current[newReel.id];
-        if (video) {
-          playVideo(video);
-        }
-      }
-    };
-
-    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const handleScroll = () => {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        activateIndex(getIndexFromScroll());
-      }, 150);
-    };
-
-    const handleScrollEnd = () => {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      activateIndex(getIndexFromScroll());
-    };
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    container.addEventListener('scrollend', handleScrollEnd, { passive: true });
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      container.removeEventListener('scrollend', handleScrollEnd);
-      if (scrollTimer) clearTimeout(scrollTimer);
-    };
+    }
   }, [filteredReels]);
 
   function stopAllVideos() {
-    Object.values(videoRefs.current).forEach(video => {
+    videoRefs.current.forEach((video) => {
       if (video) {
         video.pause();
         video.currentTime = 0;
@@ -189,8 +191,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     });
   }
 
-  function playVideo(video: HTMLVideoElement) {
+  function startVideo(video: HTMLVideoElement) {
     video.muted = isMutedRef.current;
+    video.currentTime = 0;
 
     const doPlay = () => {
       const promise = video.play();
@@ -204,14 +207,14 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       }
     };
 
-    if (video.readyState >= 2) {
+    if (video.readyState >= 3) {
       doPlay();
     } else {
       const onCanPlay = () => {
         doPlay();
-        video.removeEventListener('canplay', onCanPlay);
+        video.removeEventListener('canplaythrough', onCanPlay);
       };
-      video.addEventListener('canplay', onCanPlay);
+      video.addEventListener('canplaythrough', onCanPlay);
       video.load();
     }
   }
@@ -221,27 +224,34 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     isMutedRef.current = newMuted;
     setIsMuted(newMuted);
 
-    const currentReel = filteredReels[currentIndexRef.current];
-    if (currentReel) {
-      const video = videoRefs.current[currentReel.id];
+    videoRefs.current.forEach((video) => {
       if (video) video.muted = newMuted;
-    }
-  }, [filteredReels]);
+    });
+  }, []);
 
   const handleTogglePlay = useCallback(() => {
-    const currentReel = filteredReels[currentIndexRef.current];
-    if (!currentReel) return;
-    const video = videoRefs.current[currentReel.id];
+    const currentId = activeVideoIdRef.current;
+    if (!currentId) return;
+    const video = videoRefs.current.get(currentId);
     if (!video) return;
 
     if (video.paused) {
-      playVideo(video);
+      startVideo(video);
       setIsPaused(false);
     } else {
       video.pause();
       setIsPaused(true);
     }
-  }, [filteredReels]);
+  }, []);
+
+  const handleVideoRef = useCallback((el: HTMLVideoElement | null, reelId: string) => {
+    if (el) {
+      videoRefs.current.set(reelId, el);
+      el.muted = isMutedRef.current;
+    } else {
+      videoRefs.current.delete(reelId);
+    }
+  }, []);
 
   const fetchSingleLikeCount = async (videoId: string) => {
     const { count } = await supabase
@@ -356,7 +366,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       if (error) throw error;
       setComments(data || []);
     } catch {
-      setCommentError('Nu s-au putut încărca comentariile.');
+      setCommentError('Nu s-au putut incarca comentariile.');
     }
   };
 
@@ -378,7 +388,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       setNewComment('');
       await fetchComments(selectedVideoForComments);
     } catch {
-      setCommentError('Comentariul nu a putut fi trimis. Încearcă din nou.');
+      setCommentError('Comentariul nu a putut fi trimis. Incearca din nou.');
     }
   };
 
@@ -390,10 +400,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     { value: 'funny', label: 'Amuzante' }
   ];
 
+  const activeIndex = filteredReels.findIndex(r => r.id === activeVideoId);
+
   if (isLoading) {
     return (
       <section id="reels" className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Se incarca...</div>
+        <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </section>
     );
   }
@@ -401,12 +413,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   if (fetchError) {
     return (
       <section id="reels" className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-        <div className="text-white text-xl">Nu s-au putut încărca video-urile.</div>
+        <div className="text-white text-xl">Nu s-au putut incarca video-urile.</div>
         <button
           onClick={fetchReels}
           className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
         >
-          Încearcă din nou
+          Incearca din nou
         </button>
       </section>
     );
@@ -472,11 +484,12 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       >
         {filteredReels.map((reel, index) => {
           const local = isLocalVideo(reel.video_url);
-          const isActive = index === currentIndex;
+          const isActive = reel.id === activeVideoId;
 
           return (
             <div
               key={reel.id}
+              data-reel-id={reel.id}
               className="relative h-screen w-full snap-start snap-always flex items-center justify-center bg-black"
               style={{ scrollSnapAlign: 'start', scrollSnapStop: 'always' }}
             >
@@ -526,20 +539,13 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                 />
               ) : (
                 <video
-                  ref={(el) => {
-                    if (el) {
-                      videoRefs.current[reel.id] = el;
-                      el.muted = isMutedRef.current;
-                      if (index === 0 && isActive) {
-                        playVideo(el);
-                      }
-                    }
-                  }}
+                  ref={(el) => handleVideoRef(el, reel.id)}
                   src={reel.video_url}
                   poster={reel.thumbnail_url}
                   loop
                   playsInline
-                  preload={index === 0 ? 'auto' : 'metadata'}
+                  muted
+                  preload={index <= 1 ? 'auto' : 'metadata'}
                   onClick={handleTogglePlay}
                   className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -700,7 +706,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && submitComment()}
+                  onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                   placeholder="Scrie un comentariu..."
                   className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-amber-500"
                 />
