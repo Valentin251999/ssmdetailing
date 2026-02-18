@@ -63,10 +63,19 @@ function PageLoader() {
 
 function ScrollToSection() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (location.hash) {
       const id = location.hash.replace('#', '');
+      if (id === 'admin-panel') {
+        navigate('/admin-panel', { replace: true });
+        return;
+      }
+      if (id === 'admin') {
+        navigate('/admin', { replace: true });
+        return;
+      }
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) {
@@ -76,7 +85,7 @@ function ScrollToSection() {
     } else if (location.pathname === '/') {
       window.scrollTo(0, 0);
     }
-  }, [location]);
+  }, [location, navigate]);
 
   return null;
 }
