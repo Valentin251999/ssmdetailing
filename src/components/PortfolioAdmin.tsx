@@ -43,7 +43,7 @@ export default function PortfolioAdmin({ onNavigateToHome }: PortfolioAdminProps
       if (error) throw error;
       setPortfolioItems(data || []);
     } catch (err) {
-      console.error('Error fetching portfolio items:', err);
+      void err;
     } finally {
       setLoading(false);
     }
@@ -243,8 +243,12 @@ export default function PortfolioAdmin({ onNavigateToHome }: PortfolioAdminProps
                     <img
                       src={beforePreview || newItem.before_image_url}
                       alt="Before preview"
+                      loading="lazy"
                       className="w-full h-48 object-cover rounded-lg border border-neutral-700"
-                      onError={() => setBeforePreview('')}
+                      onError={() => {
+                        setBeforePreview('');
+                        setNewItem(prev => ({ ...prev, before_image_url: '' }));
+                      }}
                     />
                     <button
                       onClick={() => clearImage('before')}
@@ -296,8 +300,12 @@ export default function PortfolioAdmin({ onNavigateToHome }: PortfolioAdminProps
                     <img
                       src={afterPreview || newItem.after_image_url}
                       alt="After preview"
+                      loading="lazy"
                       className="w-full h-48 object-cover rounded-lg border border-neutral-700"
-                      onError={() => setAfterPreview('')}
+                      onError={() => {
+                        setAfterPreview('');
+                        setNewItem(prev => ({ ...prev, after_image_url: '' }));
+                      }}
                     />
                     <button
                       onClick={() => clearImage('after')}
@@ -382,12 +390,14 @@ export default function PortfolioAdmin({ onNavigateToHome }: PortfolioAdminProps
                     <div className="flex gap-2 flex-shrink-0">
                       <img
                         src={item.before_image_url}
-                        alt="Before"
+                        alt={`${item.title} - înainte`}
+                        loading="lazy"
                         className="w-20 h-20 object-cover rounded"
                       />
                       <img
                         src={item.after_image_url}
-                        alt="After"
+                        alt={`${item.title} - după`}
+                        loading="lazy"
                         className="w-20 h-20 object-cover rounded"
                       />
                     </div>

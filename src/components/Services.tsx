@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Armchair, Droplets, Lightbulb, CircleDot, Layers, Home, Shield, Wrench, SprayCan } from 'lucide-react';
+import { Sparkles, Armchair, Droplets, Lightbulb, CircleDot, Layers, Home, Shield, Wrench, SprayCan, type LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Sparkles,
   Armchair,
   Droplets,

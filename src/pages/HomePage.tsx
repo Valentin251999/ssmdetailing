@@ -20,9 +20,9 @@ export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: H
   return (
     <>
       <SEOHelmet
-        title="SSM Detailing - Premium Auto Detailing Marculesti | Plafoane Starlight"
-        description="SSM Detailing - Atelier specializat in plafoane starlight personalizate, curatare interioara premium si restaurare faruri in Marculesti, Ialomita."
-        keywords="detailing auto, plafon starlight, curatare auto, reconditionare faruri, detailing interior, detailing Marculesti, SSM Detailing"
+        title="SSM Detailing Mărculești | Plafoane Starlight & Detailing Auto Premium"
+        description="Atelier specializat în plafoane starlight personalizate, curățare interioară premium și restaurare faruri în Mărculești, Ialomița. Peste 8 ani experiență, rezultate garantate. Sună acum!"
+        keywords="detailing auto Marculesti, plafon starlight, curatare auto interioara, reconditionare faruri, detailing Ialomita, SSM Detailing, plafon fibra optica"
         canonical="https://ssmdetailing.ro/"
       />
       <SchemaMarkup />

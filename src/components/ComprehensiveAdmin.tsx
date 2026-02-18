@@ -135,7 +135,7 @@ export default function ComprehensiveAdmin() {
       if (reviewsRes.data) setPublicReviews(reviewsRes.data);
       if (faqRes.data) setFaqItems(faqRes.data);
     } catch (error) {
-      console.error('Error loading data:', error);
+      void error;
       showMessage('Eroare la încărcarea datelor. Verifică conexiunea la internet.');
     } finally {
       setLoading(false);
@@ -160,7 +160,7 @@ export default function ComprehensiveAdmin() {
       if (error) throw error;
       showMessage('Setările au fost salvate cu succes!');
     } catch (error) {
-      console.error('Error saving settings:', error);
+      void error;
       showMessage('Eroare la salvarea setărilor');
     } finally {
       setSaving(false);
@@ -218,7 +218,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Serviciul a fost salvat!');
     } catch (error) {
-      console.error('Error saving service:', error);
+      void error;
       showMessage('Eroare la salvarea serviciului');
     }
   };
@@ -231,7 +231,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Serviciul a fost șters!');
     } catch (error) {
-      console.error('Error deleting service:', error);
+      void error;
       showMessage('Eroare la ștergerea serviciului');
     }
   };
@@ -267,7 +267,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Imaginea a fost încărcată!');
     } catch (error) {
-      console.error('Error uploading image:', error);
+      void error;
       showMessage('Eroare la încărcarea imaginii');
     }
   };
@@ -284,7 +284,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Imaginea a fost ștearsă!');
     } catch (error) {
-      console.error('Error deleting image:', error);
+      void error;
       showMessage('Eroare la ștergerea imaginii');
     }
   };
@@ -306,7 +306,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Testimonialul a fost salvat!');
     } catch (error) {
-      console.error('Error saving testimonial:', error);
+      void error;
       showMessage('Eroare la salvarea testimonialului');
     }
   };
@@ -319,7 +319,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Testimonialul a fost șters!');
     } catch (error) {
-      console.error('Error deleting testimonial:', error);
+      void error;
       showMessage('Eroare la ștergerea testimonialului');
     }
   };
@@ -341,7 +341,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('FAQ-ul a fost salvat!');
     } catch (error) {
-      console.error('Error saving FAQ:', error);
+      void error;
       showMessage('Eroare la salvarea FAQ-ului');
     }
   };
@@ -354,7 +354,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('FAQ-ul a fost șters!');
     } catch (error) {
-      console.error('Error deleting FAQ:', error);
+      void error;
       showMessage('Eroare la ștergerea FAQ-ului');
     }
   };
@@ -367,7 +367,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Recenzia a fost ștearsă!');
     } catch (error) {
-      console.error('Error deleting review:', error);
+      void error;
       showMessage('Eroare la ștergerea recenziei');
     }
   };
@@ -382,7 +382,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Recenzia a fost aprobată!');
     } catch (error) {
-      console.error('Error approving review:', error);
+      void error;
       showMessage('Eroare la aprobarea recenziei');
     }
   };
@@ -397,7 +397,7 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('Recenzia a fost respinsă!');
     } catch (error) {
-      console.error('Error rejecting review:', error);
+      void error;
       showMessage('Eroare la respingerea recenziei');
     }
   };

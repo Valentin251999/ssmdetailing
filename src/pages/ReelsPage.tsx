@@ -9,9 +9,9 @@ export default function ReelsPage() {
   return (
     <>
       <SEOHelmet
-        title="Video Reels Detailing Auto | Transformări Before & After - SSM Detailing"
-        description="Videoclipuri spectaculoase cu transformări de detailing auto. Vezi rezultatele live: polish caroserie, detailing interior, plafon starlight, ceramic coating. Subscribe pentru conținut nou!"
-        keywords="reels detailing auto, video detailing, transformari auto, before after video, detailing tiktok, car detailing videos, ssm detailing videos"
+        title="Video Reels SSM Detailing | Transformări Auto Înainte și După"
+        description="Vizionează transformările spectaculoase realizate de SSM Detailing: plafoane starlight, curățare interioară, restaurare faruri. Videoclipuri reale din atelierul nostru din Mărculești."
+        keywords="video detailing auto, reels detailing Marculesti, transformari inainte dupa video, plafon starlight video, SSM Detailing TikTok"
         canonical="https://ssmdetailing.ro/reels"
       />
       <BreadcrumbSchema items={[

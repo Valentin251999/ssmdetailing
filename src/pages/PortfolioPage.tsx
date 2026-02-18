@@ -6,9 +6,9 @@ export default function PortfolioPage() {
   return (
     <>
       <SEOHelmet
-        title="Portofoliu Detailing Auto | Lucrări Înainte și După - SSM Detailing"
-        description="Galerie completă cu lucrări de detailing auto realizate de SSM Detailing. Transformări spectaculoase: detailing exterior, interior, plafon înstelat, recondiționare faruri. Vezi rezultatele!"
-        keywords="portofoliu detailing auto, inainte dupa detailing, lucrari detailing, transformare auto, polish rezultate, detailing profesional"
+        title="Portofoliu SSM Detailing | Transformări Spectaculoase Înainte și După"
+        description="Galerie cu transformări reale de detailing auto din Mărculești: plafoane starlight, curățare interioară, recondiționare faruri. Lucrări realizate de SSM Detailing - vezi diferența!"
+        keywords="portofoliu detailing auto Marculesti, inainte dupa detailing, lucrari plafon starlight, transformare auto, reconditionare faruri rezultate"
         canonical="https://ssmdetailing.ro/portofoliu"
       />
       <BreadcrumbSchema items={[

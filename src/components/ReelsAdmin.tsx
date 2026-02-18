@@ -110,7 +110,6 @@ export default function ReelsAdmin() {
       fetchReels();
       showMsg('success', 'Video salvat cu succes!');
     } catch (error) {
-      console.error('Eroare la salvare:', error);
       showMsg('error', 'Eroare la salvare: ' + (error as Error).message);
     }
   }
@@ -131,7 +130,6 @@ export default function ReelsAdmin() {
         fetchReels();
         showMsg('success', 'Video sters cu succes!');
       } catch (error) {
-        console.error('Eroare la stergere:', error);
         showMsg('error', 'Eroare la stergere: ' + (error as Error).message);
       }
     }
@@ -175,7 +173,6 @@ export default function ReelsAdmin() {
       setUploadProgress(100);
       showMsg('success', 'Video incarcat cu succes!');
     } catch (error) {
-      console.error('Eroare la upload:', error);
       showMsg('error', 'Eroare la incarcarea video-ului: ' + (error as Error).message);
     } finally {
       setUploading(false);
@@ -213,7 +210,6 @@ export default function ReelsAdmin() {
 
       fetchReels();
     } catch (error) {
-      console.error('Eroare la mutare:', error);
       showMsg('error', 'Eroare la mutare: ' + (error as Error).message);
     }
   }
@@ -542,6 +538,7 @@ export default function ReelsAdmin() {
                 <img
                   src={reel.thumbnail_url}
                   alt={reel.title}
+                  loading="lazy"
                   className="w-24 h-32 object-cover rounded"
                 />
               )}
