@@ -1,49 +1,45 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const SESSION_KEY = 'ssm_admin_auth';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!error) setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+    const stored = sessionStorage.getItem(SESSION_KEY);
+    if (stored === 'true') {
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: new Error(error.message) };
+  const signIn = async (password: string) => {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    if (password === adminPassword) {
+      sessionStorage.setItem(SESSION_KEY, 'true');
+      setIsAuthenticated(true);
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
     }
+    return { error: new Error('Parolă incorectă') };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    sessionStorage.removeItem(SESSION_KEY);
+    setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ isAuthenticated, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
