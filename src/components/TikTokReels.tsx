@@ -127,34 +127,38 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     if (!container) return;
 
     container.scrollTop = 0;
+    activeIdxRef.current = 0;
+    setActiveIdx(0);
+    setIsPaused(false);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          const idx = Number((entry.target as HTMLElement).dataset.idx);
-          if (isNaN(idx)) return;
-          if (idx === activeIdxRef.current) return;
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
-          stopAll();
-          activeIdxRef.current = idx;
-          setActiveIdx(idx);
-          setIsPaused(false);
-          tryPlay(idx);
-        });
-      },
-      { root: container, threshold: 0.8 }
-    );
+    const handleScroll = () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const scrollTop = container.scrollTop;
+        const height = container.clientHeight;
+        const newIdx = Math.round(scrollTop / height);
+        if (newIdx >= 0 && newIdx < reelsRef.current.length) {
+          if (newIdx !== activeIdxRef.current) {
+            stopAll();
+            activeIdxRef.current = newIdx;
+            setActiveIdx(newIdx);
+            setIsPaused(false);
+          }
+          tryPlay(newIdx);
+        }
+      }, 150);
+    };
 
-    const slides = container.querySelectorAll('[data-idx]');
-    slides.forEach(s => observer.observe(s));
+    container.addEventListener('scroll', handleScroll, { passive: true });
 
-    // play first after refs mount
-    const t = setTimeout(() => tryPlay(0), 200);
+    const t = setTimeout(() => tryPlay(0), 300);
 
     return () => {
-      observer.disconnect();
+      container.removeEventListener('scroll', handleScroll);
       clearTimeout(t);
+      if (scrollTimer) clearTimeout(scrollTimer);
     };
   }, [reels]);
 
@@ -172,15 +176,17 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
       const v = videoRefs.current[idx];
       if (!v) return;
       if (activeIdxRef.current !== idx) return;
-      v.currentTime = 0;
       v.muted = true;
-      v.play()
-        .then(() => {
-          if (activeIdxRef.current === idx) {
-            v.muted = isMutedRef.current;
-          }
-        })
-        .catch(() => {});
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            if (activeIdxRef.current === idx) {
+              v.muted = isMutedRef.current;
+            }
+          })
+          .catch(() => {});
+      }
     };
 
     const v = videoRefs.current[idx];
@@ -192,11 +198,9 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
         v.load();
       }
     } else {
-      // ref not yet set, retry
-      const t = setTimeout(() => {
+      setTimeout(() => {
         if (activeIdxRef.current === idx) tryPlay(idx);
-      }, 100);
-      return t;
+      }, 150);
     }
   }
 
