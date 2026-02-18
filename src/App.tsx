@@ -97,7 +97,6 @@ function AppContent() {
   const navigate = useNavigate();
   const isReelsPage = location.pathname === '/reels';
   const isAdminPage = location.pathname === '/admin' || location.pathname === '/admin-panel';
-  const isRecenziiPage = location.pathname === '/recenzii';
 
   return (
     <>
@@ -106,7 +105,7 @@ function AppContent() {
       </a>
 
       <ScrollToSection />
-      {!isReelsPage && !isAdminPage && !isRecenziiPage && <Header />}
+      {!isReelsPage && !isAdminPage && <Header />}
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -138,11 +137,13 @@ function AppContent() {
           } />
 
           <Route path="/recenzii" element={
-            <main id="main-content">
-              <RecenziiPage />
+            <SiteDataProvider>
+              <main id="main-content">
+                <RecenziiPage />
+              </main>
               <Footer />
               <WhatsAppButton />
-            </main>
+            </SiteDataProvider>
           } />
 
           <Route path="/admin" element={

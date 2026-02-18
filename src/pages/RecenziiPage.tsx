@@ -156,7 +156,7 @@ export default function RecenziiPage() {
       <ReviewsSchemaMarkup reviews={reviews} />
 
       <div className="min-h-screen bg-black">
-        <div className="bg-gradient-to-b from-zinc-950 to-black pt-8 pb-16">
+        <div className="bg-gradient-to-b from-zinc-950 to-black pt-24 pb-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
             <a
               href="/"
