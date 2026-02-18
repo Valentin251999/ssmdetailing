@@ -131,15 +131,19 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     setActiveIdx(0);
     setIsPaused(false);
 
-    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const handleScroll = () => {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        const scrollTop = container.scrollTop;
-        const height = container.clientHeight;
-        const newIdx = Math.round(scrollTop / height);
-        if (newIdx >= 0 && newIdx < reelsRef.current.length) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let best: { idx: number; ratio: number } | null = null;
+        entries.forEach(entry => {
+          const idx = Number((entry.target as HTMLElement).dataset.idx);
+          if (!isNaN(idx) && entry.isIntersecting) {
+            if (!best || entry.intersectionRatio > best.ratio) {
+              best = { idx, ratio: entry.intersectionRatio };
+            }
+          }
+        });
+        if (best && (best as { idx: number; ratio: number }).ratio >= 0.5) {
+          const newIdx = (best as { idx: number; ratio: number }).idx;
           if (newIdx !== activeIdxRef.current) {
             stopAll();
             activeIdxRef.current = newIdx;
@@ -148,17 +152,18 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
           }
           tryPlay(newIdx);
         }
-      }, 150);
-    };
+      },
+      { root: container, threshold: [0.5, 0.8, 1.0] }
+    );
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    const slides = container.querySelectorAll('[data-idx]');
+    slides.forEach(s => observer.observe(s));
 
     const t = setTimeout(() => tryPlay(0), 300);
 
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
       clearTimeout(t);
-      if (scrollTimer) clearTimeout(scrollTimer);
     };
   }, [reels]);
 
