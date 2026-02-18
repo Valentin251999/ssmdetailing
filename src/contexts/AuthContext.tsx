@@ -1,45 +1,46 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (password: string) => Promise<{ error: Error | null }>;
+  user: User | null;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SESSION_KEY = 'ssm_admin_auth';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(SESSION_KEY);
-    if (stored === 'true') {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (password: string) => {
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'Admin12345!';
-    if (password === adminPassword) {
-      sessionStorage.setItem(SESSION_KEY, 'true');
-      setIsAuthenticated(true);
-      return { error: null };
-    }
-    return { error: new Error('Parolă incorectă') };
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: new Error(error.message) };
+    return { error: null };
   };
 
   const signOut = async () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    setIsAuthenticated(false);
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, loading, user, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

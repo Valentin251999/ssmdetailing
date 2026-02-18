@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface AdminLoginProps {
@@ -7,6 +7,7 @@ interface AdminLoginProps {
 }
 
 export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -18,16 +19,16 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     setError('');
     setLoading(true);
 
-    if (!password) {
-      setError('Te rog introdu parola');
+    if (!email || !password) {
+      setError('Te rog introdu email-ul si parola');
       setLoading(false);
       return;
     }
 
-    const { error: signInError } = await signIn(password);
+    const { error: signInError } = await signIn(email, password);
 
     if (signInError) {
-      setError('Parolă incorectă');
+      setError('Email sau parolă incorectă');
       setLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
             <Lock className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Admin Panel</h2>
-          <p className="text-gray-400">Introdu parola pentru acces</p>
+          <p className="text-gray-400">Introdu credentialele pentru acces</p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -56,6 +57,26 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               <p className="text-red-500 text-sm">{error}</p>
             </div>
           )}
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                placeholder="admin@exemplu.ro"
+              />
+            </div>
+          </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
