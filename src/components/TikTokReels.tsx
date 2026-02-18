@@ -75,6 +75,7 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isMutedRef = useRef(true);
   const activeVideoIdRef = useRef<string | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const sessionId = getSessionId();
 
   useEffect(() => {
@@ -124,51 +125,64 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    const slideElements = container.querySelectorAll<HTMLElement>('[data-reel-id]');
-    if (slideElements.length === 0) return;
-
-    const visibilityMap = new Map<string, number>();
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const reelId = entry.target.getAttribute('data-reel-id');
-          if (reelId) {
-            visibilityMap.set(reelId, entry.intersectionRatio);
-          }
-        }
-
-        let mostVisibleId: string | null = null;
-        let highestRatio = 0;
-
-        visibilityMap.forEach((ratio, id) => {
-          if (ratio > highestRatio) {
-            highestRatio = ratio;
-            mostVisibleId = id;
-          }
-        });
-
-        if (!mostVisibleId || highestRatio < 0.5) return;
-        if (mostVisibleId === activeVideoIdRef.current) return;
-
-        activateReel(mostVisibleId);
-      },
-      {
-        root: null,
-        threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    const waitForSlides = () => {
+      const slideElements = container.querySelectorAll<HTMLElement>('[data-reel-id]');
+      if (slideElements.length === 0) {
+        requestAnimationFrame(waitForSlides);
+        return;
       }
-    );
 
-    slideElements.forEach(slide => observer.observe(slide));
+      const visibilityMap = new Map<string, number>();
 
-    const firstReelId = filteredReels[0].id;
-    if (!activeVideoIdRef.current) {
-      setTimeout(() => activateReel(firstReelId), 100);
-    }
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const reelId = entry.target.getAttribute('data-reel-id');
+            if (reelId) {
+              visibilityMap.set(reelId, entry.intersectionRatio);
+            }
+          }
+
+          let mostVisibleId: string | null = null;
+          let highestRatio = 0;
+
+          visibilityMap.forEach((ratio, id) => {
+            if (ratio > highestRatio) {
+              highestRatio = ratio;
+              mostVisibleId = id;
+            }
+          });
+
+          if (!mostVisibleId || highestRatio < 0.5) return;
+          if (mostVisibleId === activeVideoIdRef.current) return;
+
+          activateReel(mostVisibleId);
+        },
+        {
+          root: container,
+          threshold: [0, 0.25, 0.5, 0.75, 1.0],
+        }
+      );
+
+      slideElements.forEach(slide => observer.observe(slide));
+
+      if (!activeVideoIdRef.current) {
+        activateReel(filteredReels[0].id);
+      }
+
+      cleanupRef.current = () => {
+        observer.disconnect();
+        visibilityMap.clear();
+      };
+    };
+
+    requestAnimationFrame(waitForSlides);
 
     return () => {
-      observer.disconnect();
-      visibilityMap.clear();
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
     };
   }, [filteredReels]);
 
@@ -211,17 +225,24 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
   }
 
   function playVideoElement(video: HTMLVideoElement) {
-    if (video.readyState >= 2) {
+    if (video.readyState >= 3) {
       tryPlay(video);
-    } else {
-      const onReady = () => {
-        video.removeEventListener('canplay', onReady);
-        const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
-        if (reelId === activeVideoIdRef.current) {
-          tryPlay(video);
-        }
-      };
-      video.addEventListener('canplay', onReady);
+      return;
+    }
+
+    const onReady = () => {
+      video.removeEventListener('canplay', onReady);
+      video.removeEventListener('loadeddata', onReady);
+      const reelId = video.closest('[data-reel-id]')?.getAttribute('data-reel-id');
+      if (reelId === activeVideoIdRef.current) {
+        tryPlay(video);
+      }
+    };
+    video.addEventListener('canplay', onReady);
+    video.addEventListener('loadeddata', onReady);
+
+    if (video.readyState === 0) {
+      video.load();
     }
   }
 
@@ -244,8 +265,16 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     if (video.paused) {
       video.muted = isMutedRef.current;
       const p = video.play();
-      if (p) p.catch(() => {});
-      setIsPaused(false);
+      if (p) {
+        p.then(() => setIsPaused(false)).catch(() => {
+          video.muted = true;
+          isMutedRef.current = true;
+          setIsMuted(true);
+          video.play().then(() => setIsPaused(false)).catch(() => {});
+        });
+      } else {
+        setIsPaused(false);
+      }
     } else {
       video.pause();
       setIsPaused(true);
