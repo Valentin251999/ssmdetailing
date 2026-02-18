@@ -1,43 +1,9 @@
-import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { ReviewSchema } from './SchemaMarkup';
 
-interface Testimonial {
-  id: string;
-  customer_name: string;
-  customer_role: string;
-  content: string;
-  rating: number;
-}
-
 export default function Testimonials() {
-  const [loading, setLoading] = useState(true);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-
-  useEffect(() => {
-    async function fetchTestimonials() {
-      const { data } = await supabase
-        .from('testimonials')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-
-      if (data) setTestimonials(data);
-      setLoading(false);
-    }
-    fetchTestimonials();
-  }, []);
-
-  if (loading) {
-    return (
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-96"></div>
-        </div>
-      </section>
-    );
-  }
+  const { testimonials } = useSiteData();
 
   return (
     <section className="py-24 bg-gradient-to-b from-gray-900 to-black">

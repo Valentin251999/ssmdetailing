@@ -1,38 +1,9 @@
-import { useState, useEffect } from 'react';
 import { Phone, MessageCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 
 export default function Hero() {
-  const [heroEyebrow, setHeroEyebrow] = useState('Construim interioare care impresionează');
-  const [heroTitle, setHeroTitle] = useState('Atelier Premium de Detailing Interior Auto');
-  const [heroSubtitle, setHeroSubtitle] = useState('Plafoane Starlight, Detailing Interior & Recondiționare Faruri');
-  const [ctaPrimary, setCtaPrimary] = useState('Programează-te Acum');
-  const [ctaSecondary, setCtaSecondary] = useState('Scrie-ne pe WhatsApp');
-  const [whatsapp, setWhatsapp] = useState('+40726521578');
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const { data } = await supabase
-          .from('site_settings')
-          .select('hero_eyebrow, hero_title, hero_subtitle, hero_cta_primary, hero_cta_secondary, whatsapp_number')
-          .maybeSingle();
-
-        if (data) {
-          if (data.hero_eyebrow) setHeroEyebrow(data.hero_eyebrow);
-          if (data.hero_title) setHeroTitle(data.hero_title);
-          if (data.hero_subtitle) setHeroSubtitle(data.hero_subtitle);
-          if (data.hero_cta_primary) setCtaPrimary(data.hero_cta_primary);
-          if (data.hero_cta_secondary) setCtaSecondary(data.hero_cta_secondary);
-          if (data.whatsapp_number) setWhatsapp(data.whatsapp_number);
-        }
-      } catch {
-        // valorile default raman
-      }
-    }
-    fetchSettings();
-  }, []);
+  const { settings } = useSiteData();
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-black via-gray-900 to-black pt-20">
@@ -42,34 +13,34 @@ export default function Hero() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8 inline-block">
             <span className="bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full text-sm font-medium">
-              {heroEyebrow}
+              {settings.hero_eyebrow}
             </span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            {heroTitle}
+            {settings.hero_title}
           </h1>
 
           <p className="text-xl sm:text-2xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            {heroSubtitle}
+            {settings.hero_subtitle}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <a
-              href={`https://wa.me/${formatPhoneForWhatsApp(whatsapp)}`}
+              href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg flex items-center justify-center gap-3 shadow-lg shadow-green-600/20"
             >
               <MessageCircle size={24} />
-              {ctaSecondary}
+              {settings.hero_cta_secondary}
             </a>
             <a
-              href={`tel:${whatsapp}`}
+              href={`tel:${settings.whatsapp_number}`}
               className="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg flex items-center justify-center gap-3 shadow-lg shadow-amber-600/20"
             >
               <Phone size={24} />
-              {ctaPrimary}
+              {settings.hero_cta_primary}
             </a>
           </div>
 

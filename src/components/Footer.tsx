@@ -1,38 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Instagram, Facebook } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForDisplay, formatPhoneForTel } from '../utils/phoneFormatter';
 
 export default function Footer() {
-  const [tagline, setTagline] = useState('Excelență în detailing interior auto');
-  const [phone, setPhone] = useState('+40726521578');
-  const [address, setAddress] = useState('Mărculești, Ialomița, România');
-  const [instagram, setInstagram] = useState('');
-  const [facebook, setFacebook] = useState('https://www.facebook.com/chituvalentin25/');
-  const [tiktok, setTiktok] = useState('https://www.tiktok.com/@stefanmarian66');
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const { data } = await supabase
-          .from('site_settings')
-          .select('footer_tagline, contact_phone, contact_address, instagram_url, facebook_url, tiktok_url')
-          .maybeSingle();
-
-        if (data) {
-          if (data.footer_tagline) setTagline(data.footer_tagline);
-          if (data.contact_phone) setPhone(data.contact_phone);
-          if (data.contact_address) setAddress(data.contact_address);
-          setInstagram(data.instagram_url || '');
-          if (data.facebook_url) setFacebook(data.facebook_url);
-          if (data.tiktok_url) setTiktok(data.tiktok_url);
-        }
-      } catch {
-        // valorile default raman
-      }
-    }
-    fetchSettings();
-  }, []);
+  const { settings } = useSiteData();
 
   return (
     <footer className="bg-black border-t border-white/5 py-12">
@@ -74,7 +45,7 @@ export default function Footer() {
                 </div>
               </div>
               <p className="text-gray-500 text-sm">
-                {tagline}
+                {settings.footer_tagline}
               </p>
             </div>
 
@@ -93,17 +64,17 @@ export default function Footer() {
               <h4 className="text-white font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-500 text-sm mb-6">
                 <li>
-                  <a href={`tel:${formatPhoneForTel(phone)}`} className="hover:text-white transition-colors">
-                    {formatPhoneForDisplay(phone)}
+                  <a href={`tel:${formatPhoneForTel(settings.contact_phone)}`} className="hover:text-white transition-colors">
+                    {formatPhoneForDisplay(settings.contact_phone)}
                   </a>
                 </li>
-                <li>{address}</li>
+                <li>{settings.contact_address}</li>
                 <li>Lun - Sâm: 09:00 - 18:00</li>
               </ul>
               <div className="flex items-center space-x-4">
-                {instagram && (
+                {settings.instagram_url && (
                   <a
-                    href={instagram}
+                    href={settings.instagram_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-500 hover:text-amber-500 transition-colors"
@@ -112,9 +83,9 @@ export default function Footer() {
                     <Instagram size={24} />
                   </a>
                 )}
-                {facebook && (
+                {settings.facebook_url && (
                   <a
-                    href={facebook}
+                    href={settings.facebook_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-500 hover:text-amber-500 transition-colors"
@@ -123,9 +94,9 @@ export default function Footer() {
                     <Facebook size={24} />
                   </a>
                 )}
-                {tiktok && (
+                {settings.tiktok_url && (
                   <a
-                    href={tiktok}
+                    href={settings.tiktok_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-500 hover:text-amber-500 transition-colors"

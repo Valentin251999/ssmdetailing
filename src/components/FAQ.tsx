@@ -1,33 +1,12 @@
 import { ChevronDown } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState, useRef, useCallback } from 'react';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { FAQSchema } from './SchemaMarkup';
 
-interface FAQItem {
-  id: string;
-  question: string;
-  answer: string;
-}
-
 export default function FAQ() {
-  const [loading, setLoading] = useState(true);
-  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const { faqs } = useSiteData();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => {
-    async function fetchFAQs() {
-      const { data } = await supabase
-        .from('faq_items')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-
-      if (data) setFaqs(data);
-      setLoading(false);
-    }
-    fetchFAQs();
-  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     let targetIndex = -1;
@@ -48,16 +27,6 @@ export default function FAQ() {
       buttonRefs.current[targetIndex]?.focus();
     }
   }, [faqs.length]);
-
-  if (loading) {
-    return (
-      <section className="py-24 bg-gradient-to-b from-black to-gray-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-96"></div>
-        </div>
-      </section>
-    );
-  }
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);

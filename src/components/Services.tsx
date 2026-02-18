@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Sparkles, Armchair, Droplets, Lightbulb, CircleDot, Layers, Home, Shield, Wrench, SprayCan, type LucideIcon } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 
 const iconMap: Record<string, LucideIcon> = {
@@ -16,69 +15,8 @@ const iconMap: Record<string, LucideIcon> = {
   SprayCan
 };
 
-interface Service {
-  id: string;
-  title: string;
-  description: string;
-  icon_name: string;
-  is_active: boolean;
-}
-
-const DEFAULT_SERVICES: Service[] = [
-  {
-    id: '1',
-    title: 'Detailing Exterior',
-    description: 'Curățare și tratamente specializate pentru exteriorul mașinii, concepute pentru a proteja și îmbunătăți aspectul suprafețelor expuse. Tratament hidrofob pentru geamuri, parbriz și oglinzi. Degresare și curățare jante.',
-    icon_name: 'Sparkles',
-    is_active: true
-  },
-  {
-    id: '2',
-    title: 'Detailing Interior Premium',
-    description: 'Curățare profesională în profunzime pentru întreg interiorul mașinii, folosind soluții specializate adaptate fiecărui material. Tapițerie, piele, fețe uși, mochete, stâlpi și centuri de siguranță.',
-    icon_name: 'Home',
-    is_active: true
-  },
-  {
-    id: '3',
-    title: 'Recondiționare & Polimerizare Faruri',
-    description: 'Redăm claritatea farurilor printr-un proces profesional de polimerizare pentru o vizibilitate optimă și siguranță sporită.',
-    icon_name: 'Lightbulb',
-    is_active: true
-  },
-  {
-    id: '4',
-    title: 'Detailing Motor',
-    description: 'Curățare meticuloasă a compartimentului motor urmată de aplicarea unui tratament de protecție specializat, pentru un aspect îngrijit și protejarea componentelor.',
-    icon_name: 'Wrench',
-    is_active: true
-  }
-];
-
 export default function Services() {
-  const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
-  const [whatsapp, setWhatsapp] = useState('+40726521578');
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [servicesData, settingsData] = await Promise.all([
-          supabase.from('services').select('*').eq('is_active', true).order('display_order'),
-          supabase.from('site_settings').select('whatsapp_number').maybeSingle()
-        ]);
-
-        if (servicesData.data && servicesData.data.length > 0) {
-          setServices(servicesData.data);
-        }
-        if (settingsData.data?.whatsapp_number) {
-          setWhatsapp(settingsData.data.whatsapp_number);
-        }
-      } catch {
-        // valorile default raman
-      }
-    }
-    fetchData();
-  }, []);
+  const { services, settings } = useSiteData();
 
   return (
     <section id="services" className="py-24 bg-gradient-to-b from-black to-gray-900">
@@ -120,7 +58,7 @@ export default function Services() {
 
         <div className="text-center mt-16">
           <a
-            href={`https://wa.me/${formatPhoneForWhatsApp(whatsapp)}`}
+            href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg shadow-lg shadow-green-600/20"

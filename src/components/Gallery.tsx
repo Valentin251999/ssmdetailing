@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
 import { supabase, type PortfolioItem } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
+import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 import BeforeAfterSlider from './BeforeAfterSlider';
 
 interface GalleryProps {
@@ -8,31 +9,24 @@ interface GalleryProps {
 }
 
 export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
+  const { settings } = useSiteData();
   const [galleryItems, setGalleryItems] = useState<PortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-
-  const fetchFeaturedItems = async () => {
-    try {
-      setLoading(true);
-      setFetchError(false);
-      const { data, error } = await supabase
-        .from('portfolio_items')
-        .select('*')
-        .eq('is_featured', true)
-        .order('display_order', { ascending: true })
-        .limit(6);
-
-      if (error) throw error;
-      setGalleryItems(data || []);
-    } catch {
-      setFetchError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
+    async function fetchFeaturedItems() {
+      try {
+        const { data } = await supabase
+          .from('portfolio_items')
+          .select('*')
+          .eq('is_featured', true)
+          .order('display_order', { ascending: true })
+          .limit(6);
+
+        if (data && data.length > 0) setGalleryItems(data);
+      } catch {
+        // galeria ramane goala
+      }
+    }
     fetchFeaturedItems();
   }, []);
 
@@ -49,33 +43,17 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
           <p className="text-xl text-gray-400 mb-2">
             Rezultatele vorbesc de la sine.
           </p>
-          <p className="text-sm text-amber-500/80 font-medium flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h4" />
-            </svg>
-            Trage sliderul pentru a vedea transformarea
-          </p>
+          {galleryItems.length > 0 && (
+            <p className="text-sm text-amber-500/80 font-medium flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8M8 12h8M8 17h4" />
+              </svg>
+              Trage sliderul pentru a vedea transformarea
+            </p>
+          )}
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
-          </div>
-        ) : fetchError ? (
-          <div className="text-center py-20 space-y-4">
-            <p className="text-gray-400 text-lg">Galeria nu a putut fi încărcată.</p>
-            <button
-              onClick={fetchFeaturedItems}
-              className="px-6 py-3 bg-amber-500 text-black rounded-lg font-semibold hover:bg-amber-400 transition-colors"
-            >
-              Încearcă din nou
-            </button>
-          </div>
-        ) : galleryItems.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-400 text-lg">Nu există imagini în galerie încă</p>
-          </div>
-        ) : (
+        {galleryItems.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto mt-12">
             {galleryItems.map((item) => (
               <div
@@ -109,7 +87,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
             Vrei aceste rezultate pentru mașina ta?
           </p>
           <a
-            href="https://wa.me/40726521578"
+            href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg shadow-lg shadow-green-600/20"

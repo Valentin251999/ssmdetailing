@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import ReelsFloatingButton from './components/ReelsFloatingButton';
 import { AuthProvider } from './contexts/AuthContext';
+import { SiteDataProvider } from './contexts/SiteDataContext';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
@@ -108,24 +109,24 @@ function AppContent() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={
-            <>
+            <SiteDataProvider>
               <main id="main-content">
                 <HomePage onNavigateToPortfolio={() => navigate('/portofoliu')} onNavigateToReels={() => navigate('/reels')} />
               </main>
               <Footer />
               <WhatsAppButton />
               <ReelsFloatingButton onClick={() => window.location.href = '/reels'} />
-            </>
+            </SiteDataProvider>
           } />
 
           <Route path="/portofoliu" element={
-            <>
+            <SiteDataProvider>
               <main id="main-content">
                 <PortfolioPage />
               </main>
               <Footer />
               <WhatsAppButton />
-            </>
+            </SiteDataProvider>
           } />
 
           <Route path="/reels" element={

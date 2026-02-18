@@ -1,32 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Phone, MessageCircle, MapPin, Clock } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForDisplay, formatPhoneForWhatsApp, formatPhoneForTel } from '../utils/phoneFormatter';
 
 export default function Contact() {
-  const [phone, setPhone] = useState('+40726521578');
-  const [whatsapp, setWhatsapp] = useState('+40726521578');
-  const [address, setAddress] = useState('Mărculești, Ialomița, România');
-
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const { data } = await supabase
-          .from('site_settings')
-          .select('contact_phone, whatsapp_number, contact_address')
-          .maybeSingle();
-
-        if (data) {
-          if (data.contact_phone) setPhone(data.contact_phone);
-          if (data.whatsapp_number) setWhatsapp(data.whatsapp_number);
-          if (data.contact_address) setAddress(data.contact_address);
-        }
-      } catch {
-        // valorile default raman
-      }
-    }
-    fetchSettings();
-  }, []);
+  const { settings } = useSiteData();
 
   return (
     <section id="contact" className="py-24 bg-gradient-to-b from-gray-900 to-black">
@@ -51,10 +28,10 @@ export default function Contact() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Telefon</h3>
               <a
-                href={`tel:${formatPhoneForTel(phone)}`}
+                href={`tel:${formatPhoneForTel(settings.contact_phone)}`}
                 className="text-white hover:text-gray-300 transition-colors text-lg font-medium"
               >
-                {formatPhoneForDisplay(phone)}
+                {formatPhoneForDisplay(settings.contact_phone)}
               </a>
               <p className="text-gray-500 mt-2">Lun - Sâm, 09:00 - 18:00</p>
             </div>
@@ -65,7 +42,7 @@ export default function Contact() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">WhatsApp</h3>
               <a
-                href={`https://wa.me/${formatPhoneForWhatsApp(whatsapp)}`}
+                href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-500 hover:text-green-400 transition-colors text-lg font-medium"
@@ -81,7 +58,7 @@ export default function Contact() {
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Locație</h3>
               <p className="text-gray-400">
-                {address}<br />
+                {settings.contact_address}<br />
                 România
               </p>
             </div>
@@ -108,7 +85,7 @@ export default function Contact() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href={`https://wa.me/${formatPhoneForWhatsApp(whatsapp)}`}
+                href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg flex items-center justify-center gap-3 shadow-lg shadow-green-600/20"
@@ -117,7 +94,7 @@ export default function Contact() {
                 Scrie-ne pe WhatsApp
               </a>
               <a
-                href={`tel:${formatPhoneForTel(phone)}`}
+                href={`tel:${formatPhoneForTel(settings.contact_phone)}`}
                 className="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white px-8 py-4 rounded-lg transition-all font-medium text-lg flex items-center justify-center gap-3 shadow-lg shadow-amber-600/20"
               >
                 <Phone size={24} />
