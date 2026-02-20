@@ -91,16 +91,16 @@ export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps
 
   useEffect(() => {
     async function fetchPublicReviews() {
-      try {
-        const { data } = await supabase
-          .from('public_reviews')
-          .select('*')
-          .eq('is_approved', true)
-          .order('created_at', { ascending: false });
-        if (data) setPublicReviews(data);
-      } catch {
-        // silent
+      const { data, error } = await supabase
+        .from('public_reviews')
+        .select('*')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Failed to fetch reviews:', error.message);
+        return;
       }
+      if (data) setPublicReviews(data);
     }
     fetchPublicReviews();
   }, []);
