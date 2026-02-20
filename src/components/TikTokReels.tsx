@@ -237,7 +237,22 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
     const next = !isMutedRef.current;
     isMutedRef.current = next;
     setIsMuted(next);
-    Object.values(videoRefs.current).forEach(v => { if (v) v.muted = next; });
+    const activeVideo = videoRefs.current[activeIdxRef.current];
+    Object.values(videoRefs.current).forEach(v => {
+      if (v) v.muted = next;
+    });
+    if (!next && activeVideo && !activeVideo.paused) {
+      const t = activeVideo.currentTime;
+      activeVideo.pause();
+      activeVideo.muted = false;
+      activeVideo.currentTime = t;
+      activeVideo.play().catch(() => {
+        activeVideo.muted = true;
+        isMutedRef.current = true;
+        setIsMuted(true);
+        activeVideo.play().catch(() => {});
+      });
+    }
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -503,7 +518,6 @@ export default function TikTokReels({ onNavigateToHome }: TikTokReelsProps) {
                   poster={reel.thumbnail_url}
                   loop
                   playsInline
-                  muted
                   preload={idx === 0 || idx === 1 ? 'auto' : 'metadata'}
                   onClick={togglePlay}
                   className="absolute inset-0 w-full h-full object-cover md:object-contain cursor-pointer"
