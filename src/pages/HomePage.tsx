@@ -4,6 +4,7 @@ import Gallery from '../components/Gallery';
 import Reels from '../components/Reels';
 import ReelsCTA from '../components/ReelsCTA';
 import About from '../components/About';
+import Testimonials from '../components/Testimonials';
 import FAQ from '../components/FAQ';
 import Contact from '../components/Contact';
 import SEOHelmet from '../components/SEOHelmet';
@@ -12,9 +13,10 @@ import SchemaMarkup from '../components/SchemaMarkup';
 interface HomePageProps {
   onNavigateToPortfolio: () => void;
   onNavigateToReels: () => void;
+  onNavigateToRecenzii: () => void;
 }
 
-export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: HomePageProps) {
+export default function HomePage({ onNavigateToPortfolio, onNavigateToReels, onNavigateToRecenzii }: HomePageProps) {
   return (
     <>
       <SEOHelmet
@@ -29,6 +31,7 @@ export default function HomePage({ onNavigateToPortfolio, onNavigateToReels }: H
       <Gallery onNavigateToPortfolio={onNavigateToPortfolio} />
       <Reels />
       <ReelsCTA onNavigateToReels={onNavigateToReels} />
+      <Testimonials onNavigateToRecenzii={onNavigateToRecenzii} />
       <About />
       <FAQ />
       <Contact />

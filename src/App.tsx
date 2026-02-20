@@ -112,7 +112,7 @@ function AppContent() {
           <Route path="/" element={
             <SiteDataProvider>
               <main id="main-content">
-                <HomePage onNavigateToPortfolio={() => navigate('/portofoliu')} onNavigateToReels={() => navigate('/reels')} />
+                <HomePage onNavigateToPortfolio={() => navigate('/portofoliu')} onNavigateToReels={() => navigate('/reels')} onNavigateToRecenzii={() => navigate('/recenzii')} />
               </main>
               <Footer />
               <WhatsAppButton />
