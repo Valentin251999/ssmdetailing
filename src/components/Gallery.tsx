@@ -13,7 +13,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
   const { settings } = useSiteData();
   const [galleryItems, setGalleryItems] = useState<PortfolioItem[]>([]);
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
-  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(6, { threshold: 0.05 });
+  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(galleryItems.length, { threshold: 0.05 });
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation();
 
   useEffect(() => {
@@ -85,7 +85,6 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
             ))}
           </div>
         )}
-
         <div
           ref={ctaRef}
           className="text-center mt-16"

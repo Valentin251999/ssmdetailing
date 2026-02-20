@@ -21,7 +21,7 @@ export default function Reels() {
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
-  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(4, { threshold: 0.05 });
+  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(reels.length, { threshold: 0.05 });
 
   useEffect(() => {
     async function fetchReels() {

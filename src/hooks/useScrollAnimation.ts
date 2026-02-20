@@ -48,6 +48,8 @@ export function useStaggerAnimation<T extends HTMLElement = HTMLDivElement>(
     const element = containerRef.current;
     if (!element) return;
 
+    if (isVisible) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -62,7 +64,7 @@ export function useStaggerAnimation<T extends HTMLElement = HTMLDivElement>(
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [threshold, rootMargin, triggerOnce]);
+  }, [threshold, rootMargin, triggerOnce, itemCount, isVisible]);
 
   const getItemStyle = useCallback(
     (index: number): React.CSSProperties => ({
