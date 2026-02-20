@@ -10,7 +10,7 @@ export default function Contact() {
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
-    <section id="contact" className="py-24 bg-gradient-to-b from-gray-900 to-black">
+    <section id="contact" className="py-16 bg-gradient-to-b from-gray-900 to-black">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={headerRef}

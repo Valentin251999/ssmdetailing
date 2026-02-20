@@ -9,7 +9,7 @@ export default function Testimonials() {
   const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(testimonials.length);
 
   return (
-    <section className="py-24 bg-gradient-to-b from-gray-900 to-black">
+    <section className="py-16 bg-gradient-to-b from-gray-900 to-black">
       <ReviewSchema reviews={testimonials} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div

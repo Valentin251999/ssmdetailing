@@ -7,7 +7,7 @@ export default function About() {
   const { ref: cardRef, isVisible: cardVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
-    <section className="py-24 bg-gradient-to-b from-black to-gray-900">
+    <section className="py-16 bg-gradient-to-b from-black to-gray-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div

@@ -23,7 +23,7 @@ export default function Services() {
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation();
 
   return (
-    <section id="services" className="py-24 bg-gradient-to-b from-black to-gray-900">
+    <section id="services" className="py-16 bg-gradient-to-b from-black to-gray-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={headerRef}

@@ -36,7 +36,7 @@ export default function FAQ() {
   };
 
   return (
-    <section id="faq" className="py-24 bg-gradient-to-b from-black to-gray-900">
+    <section id="faq" className="py-16 bg-gradient-to-b from-black to-gray-900">
       <FAQSchema faqs={faqs} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div

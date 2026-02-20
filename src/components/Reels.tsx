@@ -88,7 +88,7 @@ export default function Reels() {
 
   return (
     <>
-      <section id="reels" className="py-20 bg-black">
+      <section id="reels" className="py-16 bg-black">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div

@@ -35,7 +35,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
   }, []);
 
   return (
-    <section id="gallery" className="py-24 bg-gradient-to-b from-gray-900 to-black">
+    <section id="gallery" className="py-16 bg-gradient-to-b from-gray-900 to-black">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div
           ref={headerRef}
@@ -87,7 +87,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
         )}
         <div
           ref={ctaRef}
-          className="text-center mt-16"
+          className="text-center mt-12"
           style={{
             opacity: ctaVisible ? 1 : 0,
             transform: ctaVisible ? 'translateY(0)' : 'translateY(20px)',

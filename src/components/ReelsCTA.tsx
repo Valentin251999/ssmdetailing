@@ -12,7 +12,7 @@ export default function ReelsCTA({ onNavigateToReels }: ReelsCTAProps) {
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation({ threshold: 0.2 });
 
   return (
-    <section className="py-20 bg-gradient-to-br from-red-600 via-red-500 to-amber-500 relative overflow-hidden">
+    <section className="py-16 bg-gradient-to-br from-red-600 via-red-500 to-amber-500 relative overflow-hidden">
       <div className="absolute inset-0 bg-black/20" />
 
       <div className="absolute inset-0 opacity-10">
