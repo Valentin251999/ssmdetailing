@@ -65,10 +65,11 @@ export default function Reels() {
   };
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
+    const v = videoRef.current;
+    if (!v) return;
+    const next = !isMuted;
+    v.muted = next;
+    setIsMuted(next);
   };
 
   const handleOpenReel = (reel: VideoReel) => {
@@ -77,17 +78,20 @@ export default function Reels() {
   };
 
   const handleCloseModal = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
     setSelectedReel(null);
     setIsMuted(true);
   };
 
   const handleVideoMount = (el: HTMLVideoElement | null) => {
     (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
-    if (el) {
-      el.muted = true;
-      const p = el.play();
-      if (p) p.catch(() => {});
-    }
+    if (!el) return;
+    el.muted = true;
+    el.playsInline = true;
+    const p = el.play();
+    if (p) p.catch(() => {});
   };
 
   const formatDuration = (seconds: number) => {
@@ -192,10 +196,8 @@ export default function Reels() {
                   ref={handleVideoMount}
                   src={selectedReel.video_url}
                   className="w-full h-full object-cover"
-                  autoPlay
                   loop
                   playsInline
-                  muted
                 />
                 <button
                   onClick={(e) => {
