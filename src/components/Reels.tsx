@@ -82,23 +82,7 @@ export default function Reels() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (loading) {
-    return (
-      <section id="reels" className="py-20 bg-black">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="aspect-[9/16] bg-white/5 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (reels.length === 0) {
+  if (!loading && reels.length === 0) {
     return null;
   }
 
@@ -127,42 +111,50 @@ export default function Reels() {
               </p>
             </div>
 
-            <div ref={gridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {reels.map((reel, index) => (
-                <div
-                  key={reel.id}
-                  onClick={() => setSelectedReel(reel)}
-                  className="group relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
-                  style={getItemStyle(index)}
-                >
-                  {reel.thumbnail_url ? (
-                    <img
-                      src={reel.thumbnail_url}
-                      alt={reel.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-amber-600/20" />
-                  )}
+            {loading ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="aspect-[9/16] bg-white/5 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div ref={gridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {reels.map((reel, index) => (
+                  <div
+                    key={reel.id}
+                    onClick={() => setSelectedReel(reel)}
+                    className="group relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
+                    style={getItemStyle(index)}
+                  >
+                    {reel.thumbnail_url ? (
+                      <img
+                        src={reel.thumbnail_url}
+                        alt={reel.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-amber-600/20" />
+                    )}
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform">
-                      <Play size={32} className="text-black fill-black ml-1" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform">
+                        <Play size={32} className="text-black fill-black ml-1" />
+                      </div>
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
+                      <h3 className="font-bold text-sm mb-1 line-clamp-2">{reel.title}</h3>
+                      {reel.duration > 0 && (
+                        <p className="text-xs text-gray-300">{formatDuration(reel.duration)}</p>
+                      )}
                     </div>
                   </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform">
-                    <h3 className="font-bold text-sm mb-1 line-clamp-2">{reel.title}</h3>
-                    {reel.duration > 0 && (
-                      <p className="text-xs text-gray-300">{formatDuration(reel.duration)}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>

@@ -17,6 +17,12 @@ export function useScrollAnimation<T extends HTMLElement = HTMLDivElement>(
     const element = ref.current;
     if (!element) return;
 
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -43,17 +49,27 @@ export function useStaggerAnimation<T extends HTMLElement = HTMLDivElement>(
   const { threshold = 0.1, rootMargin = '0px 0px -30px 0px', triggerOnce = true } = options;
   const containerRef = useRef<T>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const hasTriggered = useRef(false);
 
   useEffect(() => {
+    if (hasTriggered.current) return;
+
     const element = containerRef.current;
     if (!element) return;
+    if (itemCount === 0) return;
 
-    if (isVisible) return;
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setIsVisible(true);
+      hasTriggered.current = true;
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          hasTriggered.current = true;
           if (triggerOnce) observer.unobserve(element);
         } else if (!triggerOnce) {
           setIsVisible(false);
@@ -64,7 +80,7 @@ export function useStaggerAnimation<T extends HTMLElement = HTMLDivElement>(
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [threshold, rootMargin, triggerOnce, itemCount, isVisible]);
+  }, [threshold, rootMargin, triggerOnce, itemCount]);
 
   const getItemStyle = useCallback(
     (index: number): React.CSSProperties => ({
