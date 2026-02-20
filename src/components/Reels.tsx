@@ -68,18 +68,12 @@ export default function Reels() {
     const v = videoRef.current;
     if (!v) return;
     const next = !isMuted;
-    if (!next && !v.paused) {
-      const t = v.currentTime;
+    v.muted = next;
+    if (!next) {
+      const currentTime = v.currentTime;
       v.pause();
-      v.muted = false;
-      v.currentTime = t;
-      v.play().catch(() => {
-        v.muted = true;
-        setIsMuted(true);
-        v.play().catch(() => {});
-      });
-    } else {
-      v.muted = next;
+      v.currentTime = currentTime;
+      v.play().catch(() => {});
     }
     setIsMuted(next);
   };
