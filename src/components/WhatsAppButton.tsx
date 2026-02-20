@@ -6,7 +6,6 @@ import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 export default function WhatsAppButton() {
   const [whatsapp, setWhatsapp] = useState('');
   const [showLabel, setShowLabel] = useState(false);
-  const [labelDismissed, setLabelDismissed] = useState(false);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -21,22 +20,13 @@ export default function WhatsAppButton() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!labelDismissed) setShowLabel(true);
-    }, 3000);
-
-    let hideTimer: ReturnType<typeof setTimeout>;
-    if (showLabel && !labelDismissed) {
-      hideTimer = setTimeout(() => {
-        setShowLabel(false);
-      }, 6000);
-    }
-
+    const showTimer = setTimeout(() => setShowLabel(true), 3000);
+    const hideTimer = setTimeout(() => setShowLabel(false), 9000);
     return () => {
-      clearTimeout(timer);
+      clearTimeout(showTimer);
       clearTimeout(hideTimer);
     };
-  }, [showLabel, labelDismissed]);
+  }, []);
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
@@ -56,7 +46,6 @@ export default function WhatsAppButton() {
 
         <a
           href="/recenzii"
-          onClick={() => setLabelDismissed(true)}
           className="review-btn relative flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white rounded-full shadow-xl shadow-amber-600/40 transition-all duration-300 hover:scale-110 group"
           aria-label="Lasa o recenzie"
           title="Lasa o recenzie"
