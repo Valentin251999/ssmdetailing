@@ -2,11 +2,14 @@ import { ChevronDown } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 import { useSiteData } from '../contexts/SiteDataContext';
 import { FAQSchema } from './SchemaMarkup';
+import { useScrollAnimation, useStaggerAnimation } from '../hooks/useScrollAnimation';
 
 export default function FAQ() {
   const { faqs } = useSiteData();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { containerRef: listRef, getItemStyle } = useStaggerAnimation(faqs.length, { threshold: 0.05 });
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     let targetIndex = -1;
@@ -36,20 +39,29 @@ export default function FAQ() {
     <section id="faq" className="py-24 bg-gradient-to-b from-black to-gray-900">
       <FAQSchema faqs={faqs} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center mb-16">
+        <div
+          ref={headerRef}
+          className="max-w-3xl mx-auto text-center mb-16"
+          style={{
+            opacity: headerVisible ? 1 : 0,
+            transform: headerVisible ? 'translateY(0)' : 'translateY(40px)',
+            transition: 'opacity 0.7s ease-out, transform 0.7s ease-out',
+          }}
+        >
           <span className="text-gray-500 font-medium text-sm uppercase tracking-wide">
-            Întrebări Frecvente
+            Intrebari Frecvente
           </span>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-4 mb-6">
-            Întrebări Comune
+            Intrebari Comune
           </h2>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-4" role="region" aria-label="Intrebari frecvente">
+        <div ref={listRef} className="max-w-3xl mx-auto space-y-4" role="region" aria-label="Intrebari frecvente">
           {faqs.map((faq, index) => (
             <div
               key={faq.id}
               className="bg-gradient-to-br from-gray-800/30 to-gray-900/50 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-all duration-300"
+              style={getItemStyle(index)}
             >
               <button
                 ref={(el) => { buttonRefs.current[index] = el; }}

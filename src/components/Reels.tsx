@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useScrollAnimation, useStaggerAnimation } from '../hooks/useScrollAnimation';
 
 interface VideoReel {
   id: string;
@@ -19,6 +20,8 @@ export default function Reels() {
   const [selectedReel, setSelectedReel] = useState<VideoReel | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(4, { threshold: 0.05 });
 
   useEffect(() => {
     async function fetchReels() {
@@ -104,24 +107,33 @@ export default function Reels() {
       <section id="reels" className="py-20 bg-black">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
+            <div
+              ref={headerRef}
+              className="text-center mb-12"
+              style={{
+                opacity: headerVisible ? 1 : 0,
+                transform: headerVisible ? 'translateY(0)' : 'translateY(40px)',
+                transition: 'opacity 0.7s ease-out, transform 0.7s ease-out',
+              }}
+            >
               <h2 className="text-4xl md:text-5xl font-black mb-4">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-amber-600">
-                  Transformări
+                  Transformari
                 </span>
-                <span className="text-white ml-3">în Acțiune</span>
+                <span className="text-white ml-3">in Actiune</span>
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Urmărește procesul nostru de lucru și rezultatele spectaculoase
+                Urmareste procesul nostru de lucru si rezultatele spectaculoase
               </p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {reels.map((reel) => (
+            <div ref={gridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {reels.map((reel, index) => (
                 <div
                   key={reel.id}
                   onClick={() => setSelectedReel(reel)}
                   className="group relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
+                  style={getItemStyle(index)}
                 >
                   {reel.thumbnail_url ? (
                     <img

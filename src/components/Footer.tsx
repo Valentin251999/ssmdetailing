@@ -1,13 +1,23 @@
 import { Instagram, Facebook } from 'lucide-react';
 import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForDisplay, formatPhoneForTel } from '../utils/phoneFormatter';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 export default function Footer() {
   const { settings } = useSiteData();
+  const { ref: footerRef, isVisible: footerVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <footer className="bg-black border-t border-white/5 py-12">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        ref={footerRef}
+        className="container mx-auto px-4 sm:px-6 lg:px-8"
+        style={{
+          opacity: footerVisible ? 1 : 0,
+          transform: footerVisible ? 'translateY(0)' : 'translateY(30px)',
+          transition: 'opacity 0.8s ease-out, transform 0.8s ease-out',
+        }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
@@ -55,8 +65,8 @@ export default function Footer() {
                 <li>Plafoane Starlight</li>
                 <li>Restaurare Faruri</li>
                 <li>Detailing Interior</li>
-                <li>Retapițare</li>
-                <li>Curățare Jante</li>
+                <li>Retapitare</li>
+                <li>Curatare Jante</li>
               </ul>
             </div>
 
@@ -69,7 +79,7 @@ export default function Footer() {
                   </a>
                 </li>
                 <li>{settings.contact_address}</li>
-                <li>Lun - Sâm: 09:00 - 18:00</li>
+                <li>Lun - Sam: 09:00 - 18:00</li>
               </ul>
               <div className="flex items-center space-x-4">
                 {settings.instagram_url && (
@@ -113,7 +123,7 @@ export default function Footer() {
 
           <div className="pt-8 border-t border-white/5 text-center">
             <p className="text-gray-600 text-sm mb-2">
-              © 2024 SSM Detailing. Toate drepturile rezervate.
+              &copy; 2024 SSM Detailing. Toate drepturile rezervate.
             </p>
             <p className="text-gray-500 text-xs">
               Web design & dezvoltare: <a
@@ -122,7 +132,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="text-amber-500 font-medium hover:text-amber-400 transition-colors"
               >
-                Chițu Valentin
+                Chitu Valentin
               </a>
             </p>
           </div>

@@ -3,6 +3,7 @@ import { supabase, type PortfolioItem } from '../lib/supabase';
 import { useSiteData } from '../contexts/SiteDataContext';
 import { formatPhoneForWhatsApp } from '../utils/phoneFormatter';
 import BeforeAfterSlider from './BeforeAfterSlider';
+import { useScrollAnimation, useStaggerAnimation } from '../hooks/useScrollAnimation';
 
 interface GalleryProps {
   onNavigateToPortfolio: () => void;
@@ -11,6 +12,9 @@ interface GalleryProps {
 export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
   const { settings } = useSiteData();
   const [galleryItems, setGalleryItems] = useState<PortfolioItem[]>([]);
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(6, { threshold: 0.05 });
+  const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation();
 
   useEffect(() => {
     async function fetchFeaturedItems() {
@@ -33,12 +37,20 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
   return (
     <section id="gallery" className="py-24 bg-gradient-to-b from-gray-900 to-black">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center mb-6">
+        <div
+          ref={headerRef}
+          className="max-w-3xl mx-auto text-center mb-6"
+          style={{
+            opacity: headerVisible ? 1 : 0,
+            transform: headerVisible ? 'translateY(0)' : 'translateY(40px)',
+            transition: 'opacity 0.7s ease-out, transform 0.7s ease-out',
+          }}
+        >
           <span className="text-gray-500 font-medium text-sm uppercase tracking-wide">
-            Lucrările Noastre
+            Lucrarile Noastre
           </span>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-4 mb-6">
-            Înainte & După
+            Inainte & Dupa
           </h2>
           <p className="text-xl text-gray-400 mb-2">
             Rezultatele vorbesc de la sine.
@@ -54,11 +66,12 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
         </div>
 
         {galleryItems.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto mt-12">
-            {galleryItems.map((item) => (
+          <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto mt-12">
+            {galleryItems.map((item, index) => (
               <div
                 key={item.id}
                 className="group bg-gray-900 rounded-2xl overflow-hidden border border-white/5 hover:border-amber-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10"
+                style={getItemStyle(index)}
               >
                 <BeforeAfterSlider
                   beforeUrl={item.before_image_url}
@@ -73,7 +86,15 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
           </div>
         )}
 
-        <div className="text-center mt-16">
+        <div
+          ref={ctaRef}
+          className="text-center mt-16"
+          style={{
+            opacity: ctaVisible ? 1 : 0,
+            transform: ctaVisible ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.6s ease-out 0.2s, transform 0.6s ease-out 0.2s',
+          }}
+        >
           <button
             onClick={onNavigateToPortfolio}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black px-8 py-4 rounded-lg transition-all font-semibold text-lg shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 mb-8"
@@ -84,7 +105,7 @@ export default function Gallery({ onNavigateToPortfolio }: GalleryProps) {
             </svg>
           </button>
           <p className="text-gray-400 mb-6">
-            Vrei aceste rezultate pentru mașina ta?
+            Vrei aceste rezultate pentru masina ta?
           </p>
           <a
             href={`https://wa.me/${formatPhoneForWhatsApp(settings.whatsapp_number)}`}
