@@ -174,10 +174,11 @@ export default function ComprehensiveAdmin() {
   const saveService = async (service: Partial<Service>) => {
     try {
       if (service.id) {
+        const { id, ...updateData } = service;
         const { error } = await supabase
           .from('services')
-          .update(service)
-          .eq('id', service.id);
+          .update(updateData)
+          .eq('id', id);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -209,10 +210,11 @@ export default function ComprehensiveAdmin() {
   const saveFAQ = async (faq: Partial<FAQItem>) => {
     try {
       if (faq.id) {
+        const { id, ...updateData } = faq;
         const { error } = await supabase
           .from('faq_items')
-          .update(faq)
-          .eq('id', faq.id);
+          .update(updateData)
+          .eq('id', id);
         if (error) throw error;
       } else {
         const { error } = await supabase
