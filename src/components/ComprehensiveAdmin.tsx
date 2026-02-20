@@ -225,8 +225,8 @@ export default function ComprehensiveAdmin() {
       await loadData();
       showMessage('FAQ-ul a fost salvat!');
     } catch (error) {
-      void error;
-      showMessage('Eroare la salvarea FAQ-ului');
+      console.error('FAQ save error:', error);
+      showMessage('Eroare la salvarea FAQ-ului: ' + (error as Error).message);
     }
   };
 
