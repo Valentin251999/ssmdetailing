@@ -83,45 +83,17 @@ interface TestimonialsProps {
   onNavigateToRecenzii?: () => void;
 }
 
-export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps) {
-  const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
+function TestimonialsContent({ reviews, onNavigateToRecenzii }: { reviews: DisplayReview[]; onNavigateToRecenzii?: () => void }) {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { ref: statsRef, isVisible: statsVisible } = useScrollAnimation({ threshold: 0.2 });
   const { ref: ctaRef, isVisible: ctaVisible } = useScrollAnimation({ threshold: 0.3 });
 
-  useEffect(() => {
-    async function fetchPublicReviews() {
-      const { data, error } = await supabase
-        .from('public_reviews')
-        .select('*')
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Failed to fetch reviews:', error.message);
-        return;
-      }
-      if (data) setPublicReviews(data);
-    }
-    fetchPublicReviews();
-  }, []);
+  const totalCount = reviews.length;
+  const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / totalCount;
 
-  const allReviews: DisplayReview[] = publicReviews.map(r => ({
-    id: r.id,
-    name: r.author_name,
-    text: r.message,
-    rating: r.rating,
-  }));
-
-  const totalCount = allReviews.length;
-  const avgRating = totalCount > 0
-    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / totalCount)
-    : 5;
-
-  const midpoint = Math.ceil(allReviews.length / 2);
-  const row1 = allReviews.slice(0, midpoint);
-  const row2 = allReviews.slice(midpoint);
-
-  if (totalCount === 0) return null;
+  const midpoint = Math.ceil(reviews.length / 2);
+  const row1 = reviews.slice(0, midpoint);
+  const row2 = reviews.slice(midpoint);
 
   return (
     <section className="py-16 bg-gradient-to-b from-black via-gray-950 to-black overflow-hidden">
@@ -218,4 +190,37 @@ export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps
       )}
     </section>
   );
+}
+
+export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps) {
+  const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchPublicReviews() {
+      const { data, error } = await supabase
+        .from('public_reviews')
+        .select('id, author_name, message, rating, created_at')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Failed to fetch reviews:', error.message);
+      } else if (data) {
+        setPublicReviews(data);
+      }
+      setLoading(false);
+    }
+    fetchPublicReviews();
+  }, []);
+
+  const allReviews: DisplayReview[] = publicReviews.map(r => ({
+    id: r.id,
+    name: r.author_name,
+    text: r.message,
+    rating: r.rating,
+  }));
+
+  if (loading || allReviews.length === 0) return null;
+
+  return <TestimonialsContent reviews={allReviews} onNavigateToRecenzii={onNavigateToRecenzii} />;
 }
