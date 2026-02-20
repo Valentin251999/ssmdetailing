@@ -161,7 +161,7 @@ export default function Reels() {
 
       {selectedReel && (
         <div
-          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black z-[60] flex items-center justify-center"
           onClick={() => handleCloseModal()}
           onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }}
           role="dialog"
@@ -188,7 +188,7 @@ export default function Reels() {
                     e.stopPropagation();
                     toggleMute();
                   }}
-                  className="absolute bottom-24 right-4 z-[60] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  className="absolute bottom-24 right-4 z-[70] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
                 >
                   {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
                 </button>
@@ -197,7 +197,7 @@ export default function Reels() {
                     e.stopPropagation();
                     handleCloseModal();
                   }}
-                  className="absolute top-4 right-4 z-[60] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  className="absolute top-4 right-4 z-[70] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
                   aria-label="Inchide"
                   autoFocus
                 >
@@ -221,7 +221,7 @@ export default function Reels() {
                     e.stopPropagation();
                     handleCloseModal();
                   }}
-                  className="absolute top-4 right-4 z-[60] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  className="absolute top-4 right-4 z-[70] w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
                   aria-label="Inchide"
                   autoFocus
                 >
