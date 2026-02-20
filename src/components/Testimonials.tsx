@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Star, Quote, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useSiteData } from '../contexts/SiteDataContext';
-import { ReviewSchema } from './SchemaMarkup';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 interface PublicReview {
@@ -13,15 +11,14 @@ interface PublicReview {
   created_at: string;
 }
 
-interface UnifiedReview {
+interface DisplayReview {
   id: string;
   name: string;
   text: string;
   rating: number;
-  source: 'testimonial' | 'review';
 }
 
-function MarqueeRow({ reviews, direction, speed }: { reviews: UnifiedReview[]; direction: 'left' | 'right'; speed: number }) {
+function MarqueeRow({ reviews, direction, speed }: { reviews: DisplayReview[]; direction: 'left' | 'right'; speed: number }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -87,7 +84,6 @@ interface TestimonialsProps {
 }
 
 export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps) {
-  const { testimonials } = useSiteData();
   const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { ref: statsRef, isVisible: statsVisible } = useScrollAnimation({ threshold: 0.2 });
@@ -109,22 +105,12 @@ export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps
     fetchPublicReviews();
   }, []);
 
-  const allReviews: UnifiedReview[] = [
-    ...testimonials.map(t => ({
-      id: t.id,
-      name: t.customer_name,
-      text: t.content,
-      rating: t.rating,
-      source: 'testimonial' as const,
-    })),
-    ...publicReviews.map(r => ({
-      id: r.id,
-      name: r.author_name,
-      text: r.message,
-      rating: r.rating,
-      source: 'review' as const,
-    })),
-  ];
+  const allReviews: DisplayReview[] = publicReviews.map(r => ({
+    id: r.id,
+    name: r.author_name,
+    text: r.message,
+    rating: r.rating,
+  }));
 
   const totalCount = allReviews.length;
   const avgRating = totalCount > 0
@@ -139,7 +125,6 @@ export default function Testimonials({ onNavigateToRecenzii }: TestimonialsProps
 
   return (
     <section className="py-16 bg-gradient-to-b from-black via-gray-950 to-black overflow-hidden">
-      <ReviewSchema reviews={testimonials} />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-12">
         <div
