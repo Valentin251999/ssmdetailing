@@ -18,7 +18,7 @@ export default function Reels() {
   const [reels, setReels] = useState<VideoReel[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReel, setSelectedReel] = useState<VideoReel | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { containerRef: gridRef, getItemStyle } = useStaggerAnimation(reels.length, { threshold: 0.05 });
@@ -71,9 +71,23 @@ export default function Reels() {
     }
   };
 
+  const handleOpenReel = (reel: VideoReel) => {
+    setIsMuted(true);
+    setSelectedReel(reel);
+  };
+
   const handleCloseModal = () => {
     setSelectedReel(null);
-    setIsMuted(false);
+    setIsMuted(true);
+  };
+
+  const handleVideoMount = (el: HTMLVideoElement | null) => {
+    (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+    if (el) {
+      el.muted = true;
+      const p = el.play();
+      if (p) p.catch(() => {});
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -122,7 +136,7 @@ export default function Reels() {
                 {reels.map((reel, index) => (
                   <div
                     key={reel.id}
-                    onClick={() => setSelectedReel(reel)}
+                    onClick={() => handleOpenReel(reel)}
                     className="group relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
                     style={getItemStyle(index)}
                   >
@@ -175,13 +189,13 @@ export default function Reels() {
             {isLocalVideo(selectedReel.video_url) ? (
               <>
                 <video
-                  ref={videoRef}
+                  ref={handleVideoMount}
                   src={selectedReel.video_url}
                   className="w-full h-full object-cover"
                   autoPlay
                   loop
                   playsInline
-                  muted={isMuted}
+                  muted
                 />
                 <button
                   onClick={(e) => {
